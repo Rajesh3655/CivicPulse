@@ -11,9 +11,12 @@
   :root{--green:#00C896;--blue:#0A1628;--accent:#FFD166;--red:#EF476F}
   *{font-family:'DM Sans',sans-serif}
   h1,h2,h3,.font-display{font-family:'Syne',sans-serif}
-  body{background:#0A1628;min-height:100vh;color:#fff}
-  .sidebar{background:rgba(255,255,255,.03);border-right:1px solid rgba(255,255,255,.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:40;overflow-y:auto}
+  body{background:#0A1628;min-height:100vh;color:#fff;overflow-x:hidden}
+  .sidebar{background:rgba(255,255,255,.03);border-right:1px solid rgba(255,255,255,.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:50;overflow-y:auto;transition:transform 0.3s ease}
   .main-content{margin-left:260px;padding:32px;min-height:100vh}
+  .mobile-topbar{display:none;position:sticky;top:0;z-index:35;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:rgba(10,22,40,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
+  .menu-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:white}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(1,7,17,0.72);backdrop-filter:blur(4px);z-index:45}
   .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px}
   .input-field{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;transition:.2s;width:100%;padding:10px 14px;font-size:13px}
   .input-field:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,150,.1)}
@@ -43,11 +46,35 @@
   .message{padding:12px 14px;border-radius:12px;font-size:13px;margin-bottom:16px}
   .message.error{background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.2);color:#ff9bb0}
   .message.success{background:rgba(0,200,150,.1);border:1px solid rgba(0,200,150,.2);color:#7ce6c8}
-  @media (max-width:860px){.sidebar{position:relative;width:100%;min-height:auto}.main-content{margin-left:0;padding:20px}}
+  @media (max-width:860px){
+    .mobile-topbar{display:flex}
+    .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
+    .sidebar.open{transform:translateX(0)}
+    .main-content{margin-left:0;padding:16px}
+    .main-content > .flex.items-center.justify-between.mb-8:first-child{display:none}
+    .main-content > .grid.grid-cols-2.md\:grid-cols-4.gap-4.mb-8,
+    .main-content > .grid.grid-cols-1.lg\:grid-cols-2.gap-6.mb-6{gap:12px}
+    #section-all-issues > .flex.items-center.justify-between.mb-4,
+    #section-users > .flex.items-center.justify-between.mb-4,
+    #section-departments > .flex.items-center.justify-between.mb-4{flex-direction:column;align-items:stretch;gap:12px}
+  }
 </style>
 </head>
 <body class="grid-bg">
-<aside class="sidebar">
+<div class="mobile-topbar lg:hidden">
+  <button class="menu-btn" type="button" onclick="toggleSidebar(true)" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+  </button>
+  <div class="min-w-0">
+    <p class="font-display text-base font-bold text-white">CivicPulse</p>
+    <p class="text-white/35 text-xs">Super Admin</p>
+  </div>
+  <button onclick="loadAnalytics()" class="btn-outline text-xs px-3 py-2">Refresh</button>
+</div>
+
+<div id="sidebar-backdrop" class="sidebar-backdrop hidden" onclick="toggleSidebar(false)"></div>
+
+<aside class="sidebar" id="sidebar">
   <div class="p-5">
     <div class="flex items-center gap-3 mb-6">
       <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--green)">
@@ -171,8 +198,17 @@ Chart.defaults.color = 'rgba(255,255,255,0.5)';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
 
 function sessionExpired() {
+  toggleSidebar(false);
   localStorage.removeItem('user');
   window.location.href = 'index.html';
+}
+
+function toggleSidebar(forceOpen) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', shouldOpen);
+  backdrop.classList.toggle('hidden', !shouldOpen);
 }
 
 function switchSection(name, el) {
@@ -180,6 +216,7 @@ function switchSection(name, el) {
   document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
   document.getElementById(`section-${name}`)?.classList.add('active');
   el?.classList.add('active');
+  toggleSidebar(false);
   if (name === 'analytics') loadAnalytics();
   if (name === 'all-issues') loadAllIssues();
   if (name === 'users') loadUsers();
@@ -732,6 +769,7 @@ function closeModal() {
 }
 
 async function logout() {
+  toggleSidebar(false);
   await fetch(`${API}/auth/logout`, {method: 'POST', credentials: 'include'});
   localStorage.removeItem('user');
   window.location.href = 'index.html';
@@ -775,6 +813,10 @@ async function readJson(response) {
     return {};
   }
 }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 860) toggleSidebar(false);
+});
 
 loadAnalytics();
 </script>

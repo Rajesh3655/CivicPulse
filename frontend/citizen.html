@@ -10,9 +10,12 @@
   :root { --green:#00C896; --blue:#0A1628; --accent:#FFD166; --red:#EF476F; }
   *{font-family:'DM Sans',sans-serif}
   h1,h2,h3,.font-display{font-family:'Syne',sans-serif}
-  body{background:#0A1628;min-height:100vh;color:white}
-  .sidebar{background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:40}
+  body{background:#0A1628;min-height:100vh;color:white;overflow-x:hidden}
+  .sidebar{background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:50;transition:transform 0.3s ease}
   .main-content{margin-left:260px;padding:32px;min-height:100vh}
+  .mobile-topbar{display:none;position:sticky;top:0;z-index:35;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:rgba(10,22,40,0.92);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.08)}
+  .menu-btn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:white}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(1,7,17,0.72);backdrop-filter:blur(4px);z-index:45}
   .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px}
   .input-field{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:white;border-radius:10px;transition:all 0.2s;width:100%;padding:12px 16px}
   .input-field:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,150,0.1)}
@@ -41,7 +44,18 @@
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
   .modal{background:#111c2e;border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:32px}
   .grid-bg{background-image:linear-gradient(rgba(0,200,150,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.03) 1px,transparent 1px);background-size:40px 40px}
-  @media(max-width:768px){.sidebar{transform:translateX(-100%);transition:transform 0.3s}.sidebar.open{transform:none}.main-content{margin-left:0}}
+  @media(max-width:768px){
+    .mobile-topbar{display:flex}
+    .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
+    .sidebar.open{transform:translateX(0)}
+    .main-content{margin-left:0;padding:16px}
+    .main-content > .flex.items-center.justify-between.mb-8:first-child{display:none}
+    .main-content > .grid.grid-cols-2.md\:grid-cols-4.gap-4.mb-8{gap:12px}
+    #section-my-issues > .flex.items-center.justify-between.mb-4{flex-direction:column;align-items:stretch;gap:12px}
+    #section-report-issue .card.p-8.space-y-6{padding:20px}
+    #section-report-issue .flex.gap-3{flex-direction:column}
+    .modal{padding:20px}
+  }
   .issue-card{transition:transform 0.2s,border-color 0.2s}
   .issue-card:hover{transform:translateY(-2px);border-color:rgba(0,200,150,0.2)}
   .drop-zone{border:2px dashed rgba(255,255,255,0.15);border-radius:10px;padding:30px;text-align:center;transition:all 0.2s;cursor:pointer}
@@ -55,6 +69,19 @@
 </style>
 </head>
 <body class="grid-bg">
+
+<div class="mobile-topbar lg:hidden">
+  <button class="menu-btn" type="button" onclick="toggleSidebar(true)" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+  </button>
+  <div class="min-w-0">
+    <p class="font-display text-base font-bold text-white">CivicPulse</p>
+    <p class="text-white/35 text-xs">Citizen Dashboard</p>
+  </div>
+  <button onclick="showSection('report-issue')" class="btn-green text-xs px-4 py-2">Report</button>
+</div>
+
+<div id="sidebar-backdrop" class="sidebar-backdrop hidden" onclick="toggleSidebar(false)"></div>
 
 <!-- Sidebar -->
 <aside class="sidebar" id="sidebar">
@@ -278,7 +305,16 @@ function showSection(section) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const map = {'my-issues': 0, 'report-issue': 1};
   document.querySelectorAll('.nav-item')[map[section]]?.classList.add('active');
+  toggleSidebar(false);
   if (section === 'my-issues') loadIssues();
+}
+
+function toggleSidebar(forceOpen) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', shouldOpen);
+  backdrop.classList.toggle('hidden', !shouldOpen);
 }
 
 async function loadIssues() {
@@ -725,6 +761,7 @@ function confidenceClass(value) {
 }
 
 async function logout() {
+  toggleSidebar(false);
   await fetch(`${API}/auth/logout`, {method:'POST', credentials:'include'});
   localStorage.removeItem('user');
   window.location.href = 'index.html';
@@ -762,10 +799,15 @@ function buildGoogleMapsEmbedUrl(lat, lon) {
 }
 
 function sessionExpired() {
+  toggleSidebar(false);
   localStorage.removeItem('user');
   alert('Session expired. Please log in again.');
   window.location.href = 'index.html';
 }
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) toggleSidebar(false);
+});
 
 // Init
 loadDepartments();
