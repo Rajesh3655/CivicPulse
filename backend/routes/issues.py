@@ -152,6 +152,22 @@ def get_issue(issue_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
+@issues_bp.route('/<issue_id>/duplicate-preview', methods=['GET'])
+def get_duplicate_preview(issue_id):
+    db = current_app.db
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        issue = db.issues.find_one({'_id': ObjectId(issue_id)})
+        if not issue:
+            return jsonify({'error': 'Issue not found'}), 404
+        return jsonify({'issue': serialize_issue(issue)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 @issues_bp.route('/ai-preview', methods=['POST'])
 def ai_preview():
     db = current_app.db
@@ -224,6 +240,7 @@ def create_issue():
     selected_department = request.form.get('department', '').strip()
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
+    confirm_not_duplicate = request.form.get('confirm_not_duplicate', '').strip().lower() in {'1', 'true', 'yes'}
 
     if not title or not description:
         return jsonify({'error': 'Title and description are required'}), 400
@@ -235,7 +252,7 @@ def create_issue():
         lat, lon = None, None
 
     # Duplicate detection
-    if lat is not None and lon is not None:
+    if not confirm_not_duplicate and lat is not None and lon is not None:
         existing_issues = db.issues.find({
             'title': title,  # Exact match instead of regex to prevent injection
             'latitude': {'$ne': None},
@@ -274,6 +291,8 @@ def create_issue():
 
     duplicate_distance = ai_result.get('duplicate_distance_meters')
     if (
+        not confirm_not_duplicate
+        and
         ai_result.get('duplicate_issue_id')
         and is_duplicate_distance(duplicate_distance)
     ):

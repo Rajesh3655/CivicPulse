@@ -287,6 +287,16 @@
   </div>
 </div>
 
+<div id="duplicate-modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-display text-xl font-bold text-white">Possible Duplicate Found</h3>
+      <button onclick="closeDuplicateModal()" class="text-white/40 hover:text-white text-2xl">&times;</button>
+    </div>
+    <div id="duplicate-modal-content"></div>
+  </div>
+</div>
+
 <script>
 const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin;
 const API = `${API_BASE}/api`;
@@ -294,6 +304,7 @@ let allIssues = [];
 let allDepartments = [];
 let aiPreviewTimer = null;
 let latestPreviewToken = 0;
+let pendingDuplicateSubmission = null;
 
 const user = JSON.parse(localStorage.getItem('user') || 'null');
 if (!user || user.role !== 'citizen') window.location.href = 'index.html';
@@ -660,37 +671,66 @@ dropZone.addEventListener('drop', e => {
   }
 });
 
-async function submitIssue() {
-  const title = document.getElementById('issue-title').value.trim();
-  const category = document.getElementById('issue-category').value;
-  const department = document.getElementById('issue-department').value;
-  const description = document.getElementById('issue-description').value.trim();
+function buildIssueFormData(forceDifferent = false) {
+  const formData = new FormData();
+  formData.append('title', document.getElementById('issue-title').value.trim());
+  formData.append('category', document.getElementById('issue-category').value);
+  formData.append('department', document.getElementById('issue-department').value);
+  formData.append('description', document.getElementById('issue-description').value.trim());
   const lat = document.getElementById('issue-lat').value;
   const lon = document.getElementById('issue-lon').value;
   const imageFile = document.getElementById('issue-image').files[0];
+  if (lat) formData.append('latitude', lat);
+  if (lon) formData.append('longitude', lon);
+  if (imageFile) formData.append('image', imageFile);
+  if (forceDifferent) formData.append('confirm_not_duplicate', 'true');
+  return formData;
+}
+
+function resetIssueForm() {
+  document.getElementById('issue-title').value = '';
+  document.getElementById('issue-description').value = '';
+  document.getElementById('issue-category').value = '';
+  document.getElementById('issue-department').value = '';
+  document.getElementById('issue-lat').value = '';
+  document.getElementById('issue-lon').value = '';
+  document.getElementById('issue-image').value = '';
+  document.getElementById('image-file-name').textContent = 'No file selected';
+  document.getElementById('image-preview-el').classList.add('hidden');
+  document.getElementById('image-placeholder').classList.remove('hidden');
+  document.getElementById('location-status').textContent = '';
+  latestPreviewToken++;
+  document.getElementById('ai-preview-status').textContent = 'Waiting for details...';
+  document.getElementById('ai-preview-pills').innerHTML = `
+    <span class="ai-pill">Category: —</span>
+    <span class="ai-pill">Department: —</span>
+    <span class="ai-pill">Priority: —</span>
+  `;
+  document.getElementById('ai-preview-confidence').innerHTML = '<span class="confidence-pill confidence-medium">AI confidence: Waiting</span>';
+  document.getElementById('ai-preview-summary').textContent = 'Describe the issue to get an AI-generated summary and duplicate warning before submission.';
+}
+
+async function submitIssue(forceDifferent = false) {
+  const title = document.getElementById('issue-title').value.trim();
+  const category = document.getElementById('issue-category').value;
+  const description = document.getElementById('issue-description').value.trim();
   const errEl = document.getElementById('form-error');
   const succEl = document.getElementById('form-success');
   const btn = document.getElementById('submit-btn');
 
   errEl.classList.add('hidden');
   succEl.classList.add('hidden');
+  if (!forceDifferent) pendingDuplicateSubmission = null;
 
   if (!title) { showFormError(errEl, 'Please enter a title'); return; }
   if (!category) { showFormError(errEl, 'Please select a category'); return; }
-  if (!department) { showFormError(errEl, 'Please select a department'); return; }
+  if (!document.getElementById('issue-department').value) { showFormError(errEl, 'Please select a department'); return; }
   if (!description) { showFormError(errEl, 'Please describe the issue'); return; }
 
   btn.textContent = 'Submitting...';
   btn.disabled = true;
 
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('category', category);
-  formData.append('department', department);
-  formData.append('description', description);
-  if (lat) formData.append('latitude', lat);
-  if (lon) formData.append('longitude', lon);
-  if (imageFile) formData.append('image', imageFile);
+  const formData = buildIssueFormData(forceDifferent);
 
   try {
     const res = await fetch(`${API}/issues/`, {method:'POST', credentials:'include', body:formData});
@@ -698,7 +738,7 @@ async function submitIssue() {
     if (res.status === 401) { sessionExpired(); return; }
     if (!res.ok) {
       if (data.error === 'duplicate') {
-        showFormError(errEl, `⚠️ ${data.message}`);
+        await openDuplicateModal(data);
       } else {
         showFormError(errEl, data.error || 'Submission failed');
       }
@@ -709,32 +749,77 @@ async function submitIssue() {
     // Success
     succEl.textContent = '✅ Issue submitted successfully! You can report another issue or open My Issues anytime.';
     succEl.classList.remove('hidden');
-    document.getElementById('issue-title').value = '';
-    document.getElementById('issue-description').value = '';
-    document.getElementById('issue-category').value = '';
-    document.getElementById('issue-department').value = '';
-    document.getElementById('issue-lat').value = '';
-    document.getElementById('issue-lon').value = '';
-    document.getElementById('issue-image').value = '';
-    document.getElementById('image-file-name').textContent = 'No file selected';
-    document.getElementById('image-preview-el').classList.add('hidden');
-    document.getElementById('image-placeholder').classList.remove('hidden');
-    document.getElementById('location-status').textContent = '';
-    latestPreviewToken++;
-    document.getElementById('ai-preview-status').textContent = 'Waiting for details...';
-    document.getElementById('ai-preview-pills').innerHTML = `
-      <span class="ai-pill">Category: —</span>
-      <span class="ai-pill">Department: —</span>
-      <span class="ai-pill">Priority: —</span>
-    `;
-    document.getElementById('ai-preview-confidence').innerHTML = '<span class="confidence-pill confidence-medium">AI confidence: Waiting</span>';
-    document.getElementById('ai-preview-summary').textContent = 'Describe the issue to get an AI-generated summary and duplicate warning before submission.';
+    pendingDuplicateSubmission = null;
+    closeDuplicateModal();
+    resetIssueForm();
     loadIssues();
   } catch(e) {
     showFormError(errEl, 'Connection error. Is the backend running?');
   }
   btn.textContent = 'Submit Issue';
   btn.disabled = false;
+}
+
+async function openDuplicateModal(duplicateData) {
+  pendingDuplicateSubmission = duplicateData;
+  let existingIssue = null;
+
+  if (duplicateData.existing_id) {
+    const res = await fetch(`${API}/issues/${duplicateData.existing_id}/duplicate-preview`, {credentials: 'include'});
+    if (res.status === 401) { sessionExpired(); return; }
+    const data = await readJsonSafely(res);
+    if (res.ok) existingIssue = data.issue || null;
+  }
+
+  document.getElementById('duplicate-modal-content').innerHTML = `
+    <div class="space-y-5">
+      <div class="p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10">
+        <p class="text-yellow-200 text-sm">${escHtml(duplicateData.message || 'A similar issue may already exist nearby.')}</p>
+        <p class="text-white/40 text-xs mt-2">Check the existing report below. If your issue is different, press "No, it is different" and your report will still be submitted.</p>
+      </div>
+
+      ${existingIssue ? `
+        <div class="card p-4 space-y-4">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div class="min-w-0">
+              <p class="font-display text-lg font-bold text-white">${escHtml(existingIssue.title)}</p>
+              <p class="text-white/40 text-xs mt-1">${formatDate(existingIssue.created_at)}</p>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <span class="status-badge status-${existingIssue.status.replace(' ','_')}">${existingIssue.status}</span>
+              <span class="priority-badge priority-${escHtml(existingIssue.priority || 'Medium')}">${escHtml(existingIssue.priority || 'Medium')} Priority</span>
+            </div>
+          </div>
+          <p class="text-white/65 text-sm leading-relaxed">${escHtml(existingIssue.description || existingIssue.ai_summary || '')}</p>
+          ${existingIssue.image ? `<img src="${API.replace('/api','')+'/uploads/'+existingIssue.image}" class="image-preview" alt="Existing issue image">` : ''}
+          <div class="grid grid-cols-2 gap-3 text-sm issue-summary-grid">
+            <div class="card p-3"><p class="text-white/40 text-xs mb-1">Department</p><p class="text-white">${escHtml(existingIssue.department_name || 'Unassigned')}</p></div>
+            <div class="card p-3"><p class="text-white/40 text-xs mb-1">Category</p><p class="text-white">${escHtml(existingIssue.category || 'Other')}</p></div>
+            ${existingIssue.latitude ? `<div class="card p-3 col-span-2"><p class="text-white/40 text-xs mb-1">Location</p><a href="${buildGoogleMapsLink(existingIssue.latitude, existingIssue.longitude)}" target="_blank" rel="noopener noreferrer" style="color:var(--green)">Open existing issue in Google Maps</a></div>` : ''}
+          </div>
+        </div>
+      ` : `<div class="card p-4"><p class="text-white/50 text-sm">A matching issue exists, but its details could not be loaded.</p></div>`}
+
+      <div class="flex gap-3 flex-wrap">
+        <button type="button" class="btn-outline flex-1 text-sm" onclick="confirmDuplicateMatch()">Yes, same issue</button>
+        <button type="button" class="btn-green flex-1 text-sm" onclick="submitDifferentIssue()">No, it is different</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('duplicate-modal').classList.remove('hidden');
+}
+
+function closeDuplicateModal() {
+  document.getElementById('duplicate-modal').classList.add('hidden');
+}
+
+function confirmDuplicateMatch() {
+  closeDuplicateModal();
+}
+
+async function submitDifferentIssue() {
+  closeDuplicateModal();
+  await submitIssue(true);
 }
 
 async function readJsonSafely(response) {
