@@ -46,6 +46,8 @@
   .message{padding:12px 14px;border-radius:12px;font-size:13px;margin-bottom:16px}
   .message.error{background:rgba(239,71,111,.1);border:1px solid rgba(239,71,111,.2);color:#ff9bb0}
   .message.success{background:rgba(0,200,150,.1);border:1px solid rgba(0,200,150,.2);color:#7ce6c8}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .data-table{min-width:760px}
   @media (max-width:860px){
     .mobile-topbar{display:flex}
     .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
@@ -57,6 +59,11 @@
     #section-all-issues > .flex.items-center.justify-between.mb-4,
     #section-users > .flex.items-center.justify-between.mb-4,
     #section-departments > .flex.items-center.justify-between.mb-4{flex-direction:column;align-items:stretch;gap:12px}
+    #section-all-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3{flex-direction:column}
+    #section-all-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3 > .input-field,
+    #section-all-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3 > button,
+    #section-users > .flex.items-center.justify-between.mb-4 > button,
+    #section-departments > .flex.items-center.justify-between.mb-4 > button{width:100%}
   }
 </style>
 </head>
@@ -151,10 +158,12 @@
       </div>
     </div>
     <div class="card overflow-hidden">
-      <table class="w-full text-sm">
+      <div class="table-scroll">
+      <table class="w-full text-sm data-table">
         <thead><tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th class="text-left p-3 text-white/40 font-normal">Title</th><th class="text-left p-3 text-white/40 font-normal hidden md:table-cell">Department</th><th class="text-left p-3 text-white/40 font-normal">Status</th><th class="text-left p-3 text-white/40 font-normal hidden md:table-cell">Reporter</th><th class="text-left p-3 text-white/40 font-normal hidden lg:table-cell">Date</th><th class="text-left p-3 text-white/40 font-normal">Action</th></tr></thead>
         <tbody id="all-issues-body"><tr><td colspan="6" class="p-8 text-center text-white/30">Loading...</td></tr></tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -164,10 +173,12 @@
       <button onclick="openUserModal()" class="btn-green">+ Add User</button>
     </div>
     <div class="card overflow-hidden">
-      <table class="w-full text-sm">
+      <div class="table-scroll">
+      <table class="w-full text-sm data-table">
         <thead><tr style="border-bottom:1px solid rgba(255,255,255,.06)"><th class="text-left p-3 text-white/40 font-normal">Name</th><th class="text-left p-3 text-white/40 font-normal">Email</th><th class="text-left p-3 text-white/40 font-normal">Role</th><th class="text-left p-3 text-white/40 font-normal hidden md:table-cell">Department</th><th class="text-left p-3 text-white/40 font-normal">Actions</th></tr></thead>
         <tbody id="users-table-body"><tr><td colspan="5" class="p-8 text-center text-white/30">Loading...</td></tr></tbody>
       </table>
+      </div>
     </div>
   </div>
 

@@ -47,6 +47,8 @@
   .timeline-item::before{content:'';position:absolute;left:8px;top:16px;width:2px;background:rgba(255,255,255,0.1);bottom:0}
   .timeline-item:last-child::before{display:none}
   .timeline-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--green)}
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .data-table{min-width:720px}
   @media(max-width:768px){
     .mobile-topbar{display:flex}
     .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
@@ -57,6 +59,9 @@
     .main-content > .grid.grid-cols-1.md\:grid-cols-3.gap-4.mb-8,
     .main-content > .grid.grid-cols-1.lg\:grid-cols-2.gap-6.mb-8{gap:16px}
     #section-issues > .flex.items-center.justify-between.mb-4{flex-direction:column;align-items:stretch;gap:12px}
+    #section-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3{flex-direction:column}
+    #section-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3 > .input-field,
+    #section-issues > .flex.items-center.justify-between.mb-4 > .flex.gap-3 > button{width:100%}
     .modal{padding:20px}
   }
 </style>
@@ -174,7 +179,8 @@
     </div>
 
     <div class="card overflow-hidden">
-      <table class="w-full text-sm">
+      <div class="table-scroll">
+      <table class="w-full text-sm data-table">
         <thead>
           <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
             <th class="text-left p-4 text-white/40 font-normal">Issue</th>
@@ -188,6 +194,7 @@
           <tr><td colspan="5" class="p-8 text-center text-white/30">Loading issues...</td></tr>
         </tbody>
       </table>
+      </div>
     </div>
   </section>
 </main>

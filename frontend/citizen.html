@@ -52,8 +52,11 @@
     .main-content > .flex.items-center.justify-between.mb-8:first-child{display:none}
     .main-content > .grid.grid-cols-2.md\:grid-cols-4.gap-4.mb-8{gap:12px}
     #section-my-issues > .flex.items-center.justify-between.mb-4{flex-direction:column;align-items:stretch;gap:12px}
+    #section-my-issues > .flex.items-center.justify-between.mb-4 > .input-field{width:100%!important}
     #section-report-issue .card.p-8.space-y-6{padding:20px}
     #section-report-issue .flex.gap-3{flex-direction:column}
+    .issue-meta{flex-direction:column;align-items:flex-start;gap:6px}
+    .issue-summary-grid{grid-template-columns:1fr}
     .modal{padding:20px}
   }
   .issue-card{transition:transform 0.2s,border-color 0.2s}
@@ -378,7 +381,7 @@ function renderIssues(issues) {
           </div>
           <h3 class="font-display font-bold text-white text-base truncate">${escHtml(issue.title)}</h3>
           <p class="text-white/40 text-sm mt-1 line-clamp-2">${escHtml(issue.ai_summary || issue.description)}</p>
-          <div class="flex items-center gap-4 mt-3 text-xs text-white/30">
+          <div class="flex items-center gap-4 mt-3 text-xs text-white/30 issue-meta flex-wrap">
             <span>📁 ${escHtml(issue.department_name)}</span>
             ${issue.latitude ? `<a href="${buildGoogleMapsLink(issue.latitude, issue.longitude)}" target="_blank" rel="noopener noreferrer" style="color:var(--green)">📍 View on Google Maps</a>` : ''}
             <span>🕒 ${formatDate(issue.created_at)}</span>
@@ -429,7 +432,7 @@ async function openModal(issueId) {
 
       ${issue.image ? `<img src="${API.replace('/api','')+'/uploads/'+issue.image}" class="image-preview" alt="Issue photo">` : ''}
 
-      <div class="grid grid-cols-2 gap-3 text-sm">
+      <div class="grid grid-cols-2 gap-3 text-sm issue-summary-grid">
         ${issue.latitude ? `
           <div class="card p-3 col-span-2">
             <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
