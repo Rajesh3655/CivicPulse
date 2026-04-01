@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import os
 import math
 from werkzeug.utils import secure_filename
-from ml_service import analyze_issue
+from ml_service import analyze_issue, DUPLICATE_BLOCK_SCORE_THRESHOLD
 
 issues_bp = Blueprint('issues', __name__)
 
@@ -296,6 +296,7 @@ def create_issue():
         and
         ai_result.get('duplicate_issue_id')
         and is_duplicate_distance(duplicate_distance)
+        and (ai_result.get('duplicate_score', 0) >= DUPLICATE_BLOCK_SCORE_THRESHOLD)
     ):
         return jsonify({
             'error': 'duplicate',

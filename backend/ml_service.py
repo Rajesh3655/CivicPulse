@@ -201,6 +201,8 @@ BASE_DIR = os.path.dirname(__file__)
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 TRAINING_REPORT_PATH = os.path.join(MODEL_DIR, "training_report.json")
 DUPLICATE_DISTANCE_THRESHOLD_METERS = 200
+DUPLICATE_REVIEW_SCORE_THRESHOLD = 0.45
+DUPLICATE_BLOCK_SCORE_THRESHOLD = 0.62
 
 
 def normalize_text(value: str | None) -> str:
@@ -439,6 +441,10 @@ def is_duplicate_distance(distance_meters: float | None) -> bool:
     return distance_meters is not None and distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS
 
 
+def is_duplicate_score(score: float | None) -> bool:
+    return score is not None and score >= DUPLICATE_BLOCK_SCORE_THRESHOLD
+
+
 def calculate_duplicate_signal(
     db,
     title: str,
@@ -533,8 +539,13 @@ def calculate_duplicate_signal(
             3,
         )
         if score > best["score"]:
-            if is_duplicate_distance(distance_meters):
+            if is_duplicate_distance(distance_meters) and is_duplicate_score(score):
                 message = f"Potential duplicate complaint found within {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters."
+            elif is_duplicate_distance(distance_meters):
+                message = (
+                    f"A nearby issue was found within {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters, "
+                    "but the text match confidence is moderate."
+                )
             elif distance_meters is not None:
                 message = f"Similar complaint found, but it is more than {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters away."
             else:
@@ -544,7 +555,7 @@ def calculate_duplicate_signal(
                 "duplicate_issue_id": str(issue["_id"]),
                 "similarity": round(similarity, 3),
                 "distance_meters": round(distance_meters, 1) if distance_meters is not None else None,
-                "message": message if score >= 0.45 else "No likely duplicate found.",
+                "message": message if score >= DUPLICATE_REVIEW_SCORE_THRESHOLD else "No likely duplicate found.",
             }
 
     return best
