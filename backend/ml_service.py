@@ -392,6 +392,18 @@ def simple_text_similarity(text_a: str, text_b: str) -> float:
     return overlap / max(1, len(tokens_a | tokens_b))
 
 
+def exact_or_prefix_title_similarity(title_a: str, title_b: str) -> float:
+    normalized_a = normalize_text(title_a)
+    normalized_b = normalize_text(title_b)
+    if not normalized_a or not normalized_b:
+        return 0.0
+    if normalized_a == normalized_b:
+        return 1.0
+    if normalized_a in normalized_b or normalized_b in normalized_a:
+        return 0.92
+    return simple_text_similarity(normalized_a, normalized_b)
+
+
 def semantic_similarity(texts: list[str]) -> list[list[float]]:
     if len(texts) < 2:
         return [[1.0]]
@@ -427,8 +439,18 @@ def is_duplicate_distance(distance_meters: float | None) -> bool:
     return distance_meters is not None and distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS
 
 
-def calculate_duplicate_signal(db, title: str, description: str, lat: float | None, lon: float | None) -> dict:
+def calculate_duplicate_signal(
+    db,
+    title: str,
+    description: str,
+    lat: float | None,
+    lon: float | None,
+    category: str | None = None,
+    department_name: str | None = None,
+) -> dict:
     current_text = normalize_text(f"{title} {description}")
+    normalized_category = normalize_text(category)
+    normalized_department = normalize_text(department_name)
     if not current_text:
         return {
             "score": 0.0,
@@ -447,6 +469,8 @@ def calculate_duplicate_signal(db, title: str, description: str, lat: float | No
                 "latitude": 1,
                 "longitude": 1,
                 "status": 1,
+                "category": 1,
+                "department_name": 1,
             },
         )
         .sort("created_at", -1)
@@ -473,11 +497,25 @@ def calculate_duplicate_signal(db, title: str, description: str, lat: float | No
     }
 
     for index, issue in enumerate(issues, start=1):
-        similarity = float(similarity_matrix[0][index])
+        semantic_score = float(similarity_matrix[0][index])
+        lexical_score = simple_text_similarity(current_text, normalize_text(f"{issue.get('title', '')} {issue.get('description', '')}"))
+        title_score = exact_or_prefix_title_similarity(title, issue.get("title", ""))
+        similarity = max(semantic_score, lexical_score, title_score)
         distance_score = 0.0
+        category_score = 0.0
+        department_score = 0.0
         distance_meters = None
         existing_lat = issue.get("latitude")
         existing_lon = issue.get("longitude")
+        existing_category = normalize_text(issue.get("category"))
+        existing_department = normalize_text(issue.get("department_name"))
+
+        if normalized_category and existing_category:
+            category_score = 1.0 if normalized_category == existing_category else 0.0
+
+        if normalized_department and existing_department:
+            department_score = 1.0 if normalized_department == existing_department else 0.0
+
         if lat is not None and lon is not None and existing_lat is not None and existing_lon is not None:
             distance_meters = haversine_distance(lat, lon, existing_lat, existing_lon)
             if distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS:
@@ -486,7 +524,14 @@ def calculate_duplicate_signal(db, title: str, description: str, lat: float | No
                 distance_score = 0.6
             elif distance_meters <= 1000:
                 distance_score = 0.25
-        score = round((similarity * 0.7) + (distance_score * 0.3), 3)
+
+        score = round(
+            (similarity * 0.55)
+            + (distance_score * 0.25)
+            + (category_score * 0.12)
+            + (department_score * 0.08),
+            3,
+        )
         if score > best["score"]:
             if is_duplicate_distance(distance_meters):
                 message = f"Potential duplicate complaint found within {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters."
@@ -643,7 +688,15 @@ def analyze_issue(
         category_confidence = max(category_confidence, image_analysis["confidence"])
 
     ai_department_id, ai_department_name = find_department_for_category(departments, predicted_category)
-    duplicate_signal = calculate_duplicate_signal(db, title, description, latitude, longitude)
+    duplicate_signal = calculate_duplicate_signal(
+        db,
+        title,
+        description,
+        latitude,
+        longitude,
+        predicted_category,
+        ai_department_name,
+    )
     priority, priority_confidence = predict_priority(
         predicted_category,
         title,
