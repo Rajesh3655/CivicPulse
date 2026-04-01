@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicPulse — Citizen Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --green:#00C896; --blue:#0A1628; --accent:#FFD166; --red:#EF476F; }
+  *{font-family:'DM Sans',sans-serif}
+  h1,h2,h3,.font-display{font-family:'Syne',sans-serif}
+  body{background:#0A1628;min-height:100vh;color:white}
+  .sidebar{background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:40}
+  .main-content{margin-left:260px;padding:32px;min-height:100vh}
+  .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px}
+  .input-field{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:white;border-radius:10px;transition:all 0.2s;width:100%;padding:12px 16px}
+  .input-field:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,150,0.1)}
+  .input-field::placeholder{color:rgba(255,255,255,0.3)}
+  select.input-field option{background:#0A1628}
+  .btn-green{background:var(--green);color:#0A1628;font-family:'Syne',sans-serif;font-weight:700;border-radius:10px;padding:12px 24px;transition:all 0.2s;border:none;cursor:pointer}
+  .btn-green:hover{background:#00e0aa;box-shadow:0 0 20px rgba(0,200,150,0.3);transform:translateY(-1px)}
+  .btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);border-radius:10px;padding:10px 20px;transition:all 0.2s;cursor:pointer}
+  .btn-outline:hover{border-color:var(--green);color:var(--green)}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s;font-size:14px}
+  .nav-item:hover,.nav-item.active{background:rgba(0,200,150,0.1);color:var(--green)}
+  .nav-item svg{width:18px;height:18px}
+  .status-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif}
+  .status-Pending{background:rgba(255,193,7,0.15);color:#FFC107;border:1px solid rgba(255,193,7,0.3)}
+  .status-In.Progress,.status-In_Progress{background:rgba(0,123,255,0.15);color:#4DA3FF;border:1px solid rgba(0,123,255,0.3)}
+  .status-Resolved{background:rgba(0,200,150,0.15);color:#00C896;border:1px solid rgba(0,200,150,0.3)}
+  .priority-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif}
+  .priority-High{background:rgba(239,71,111,0.15);color:#EF476F;border:1px solid rgba(239,71,111,0.3)}
+  .priority-Medium{background:rgba(255,209,102,0.15);color:#FFD166;border:1px solid rgba(255,209,102,0.3)}
+  .priority-Low{background:rgba(0,200,150,0.15);color:#00C896;border:1px solid rgba(0,200,150,0.3)}
+  .image-preview{width:100%;height:200px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1)}
+  .timeline-item{position:relative;padding-left:28px;padding-bottom:20px}
+  .timeline-item::before{content:'';position:absolute;left:8px;top:16px;width:2px;background:rgba(255,255,255,0.1);bottom:0}
+  .timeline-item:last-child::before{display:none}
+  .timeline-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#111c2e;border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:32px}
+  .grid-bg{background-image:linear-gradient(rgba(0,200,150,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.03) 1px,transparent 1px);background-size:40px 40px}
+  @media(max-width:768px){.sidebar{transform:translateX(-100%);transition:transform 0.3s}.sidebar.open{transform:none}.main-content{margin-left:0}}
+  .issue-card{transition:transform 0.2s,border-color 0.2s}
+  .issue-card:hover{transform:translateY(-2px);border-color:rgba(0,200,150,0.2)}
+  .drop-zone{border:2px dashed rgba(255,255,255,0.15);border-radius:10px;padding:30px;text-align:center;transition:all 0.2s;cursor:pointer}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--green);background:rgba(0,200,150,0.05)}
+  #location-status{font-size:12px;margin-top:6px}
+  .ai-pill{padding:6px 10px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.75)}
+  .confidence-pill{padding:6px 10px;border-radius:999px;font-size:11px;border:1px solid rgba(255,255,255,0.08)}
+  .confidence-high{background:rgba(0,200,150,0.14);color:#00C896}
+  .confidence-medium{background:rgba(255,209,102,0.14);color:#FFD166}
+  .confidence-low{background:rgba(239,71,111,0.14);color:#EF476F}
+</style>
+</head>
+<body class="grid-bg">
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="p-6">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--green)">
+        <svg viewBox="0 0 24 24" fill="#0A1628" class="w-5 h-5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+      </div>
+      <span class="font-display text-lg font-bold text-white">CivicPulse</span>
+    </div>
+
+    <div class="mb-6 p-3 rounded-xl" style="background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.15)">
+      <p class="text-xs text-white/40 mb-1">Logged in as</p>
+      <p class="font-semibold text-white text-sm" id="user-name-sidebar">...</p>
+      <span class="text-xs px-2 py-0.5 rounded-full mt-1 inline-block" style="background:rgba(0,200,150,0.2);color:var(--green)">Citizen</span>
+    </div>
+
+    <nav class="space-y-1">
+      <div class="nav-item active" onclick="showSection('my-issues')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        My Issues
+      </div>
+      <div class="nav-item" onclick="showSection('report-issue')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Report Issue
+      </div>
+    </nav>
+  </div>
+
+  <div class="absolute bottom-6 left-6 right-6">
+    <button onclick="logout()" class="btn-outline w-full text-sm flex items-center justify-center gap-2">
+      <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      Logout
+    </button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="font-display text-2xl font-bold text-white">Citizen Dashboard</h1>
+      <p class="text-white/40 text-sm mt-1">Report and track civic issues in your area</p>
+    </div>
+    <button onclick="showSection('report-issue')" class="btn-green text-sm">+ Report Issue</button>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">Total Reported</p>
+      <p class="text-2xl font-display font-bold text-white" id="stat-total">0</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">Pending</p>
+      <p class="text-2xl font-display font-bold" style="color:#FFC107" id="stat-pending">0</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">In Progress</p>
+      <p class="text-2xl font-display font-bold" style="color:#4DA3FF" id="stat-inprogress">0</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">Resolved</p>
+      <p class="text-2xl font-display font-bold" style="color:var(--green)" id="stat-resolved">0</p>
+    </div>
+  </div>
+
+  <!-- My Issues Section -->
+  <section id="section-my-issues">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-display text-lg font-bold text-white">My Issues</h2>
+      <select onchange="filterIssues(this.value)" class="input-field" style="width:auto;padding:8px 12px;font-size:13px">
+        <option value="all">All Status</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+    </div>
+    <div id="issues-list" class="space-y-4"></div>
+    <div id="no-issues" class="hidden card p-12 text-center">
+      <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.1)" class="w-16 h-16 mx-auto mb-4"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      <p class="text-white/40">No issues reported yet</p>
+      <button onclick="showSection('report-issue')" class="btn-green mt-4 text-sm">Report Your First Issue</button>
+    </div>
+  </section>
+
+  <!-- Report Issue Section -->
+  <section id="section-report-issue" class="hidden">
+    <div class="max-w-2xl">
+      <h2 class="font-display text-lg font-bold text-white mb-6">Report New Issue</h2>
+      <div class="card p-8 space-y-6">
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Issue Title *</label>
+          <input type="text" id="issue-title" placeholder="e.g., Large pothole on Main Street" class="input-field">
+        </div>
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Category *</label>
+          <select id="issue-category" class="input-field">
+            <option value="">Select category...</option>
+            <option value="Pothole">Pothole</option>
+            <option value="Road Damage">Road Damage</option>
+            <option value="Footpath">Footpath</option>
+            <option value="Street Light">Street Light</option>
+            <option value="Power Outage">Power Outage</option>
+            <option value="Water Leakage">Water Leakage</option>
+            <option value="Sewage">Sewage</option>
+            <option value="Drainage">Drainage</option>
+            <option value="Garbage">Garbage</option>
+            <option value="Waste Disposal">Waste Disposal</option>
+            <option value="Park">Park</option>
+            <option value="Tree">Tree</option>
+            <option value="Safety Hazard">Safety Hazard</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Assign Related Department *</label>
+          <select id="issue-department" class="input-field">
+            <option value="">Select department...</option>
+          </select>
+          <p class="text-white/35 text-xs mt-2">Choose the department that should handle this issue.</p>
+        </div>
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Description *</label>
+          <textarea id="issue-description" rows="4" placeholder="Describe the issue in detail..." class="input-field resize-none"></textarea>
+        </div>
+
+        <div class="card p-4">
+          <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+            <div>
+              <p class="text-white/60 text-sm font-display font-bold">AI Preview</p>
+              <p class="text-white/30 text-xs mt-1">Live suggestions appear while you type.</p>
+            </div>
+            <span id="ai-preview-status" class="text-xs text-white/35">Waiting for details...</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3" id="ai-preview-pills">
+            <span class="ai-pill">Category: —</span>
+            <span class="ai-pill">Department: —</span>
+            <span class="ai-pill">Priority: —</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3" id="ai-preview-confidence">
+            <span class="confidence-pill confidence-medium">AI confidence: Waiting</span>
+          </div>
+          <p id="ai-preview-summary" class="text-white/50 text-sm leading-relaxed">Describe the issue to get an AI-generated summary and duplicate warning before submission.</p>
+        </div>
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Location</label>
+          <div class="flex gap-3">
+            <input type="text" id="issue-lat" placeholder="Latitude" class="input-field" readonly style="flex:1">
+            <input type="text" id="issue-lon" placeholder="Longitude" class="input-field" readonly style="flex:1">
+            <button onclick="getLocation()" class="btn-outline text-sm px-4 whitespace-nowrap" id="loc-btn">
+              📍 Detect
+            </button>
+          </div>
+          <p id="location-status" class="text-white/40"></p>
+        </div>
+
+        <div>
+          <label class="text-white/60 text-sm mb-2 block">Photo (optional)</label>
+          <input type="file" id="issue-image" accept="image/*" class="hidden">
+          <div class="flex items-center gap-3 mb-3 flex-wrap">
+            <button type="button" id="choose-image-btn" class="btn-outline text-sm px-4">Choose Photo</button>
+            <span id="image-file-name" class="text-white/35 text-xs">No file selected</span>
+          </div>
+          <div class="drop-zone" id="drop-zone">
+            <div id="image-placeholder">
+              <svg viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)" class="w-10 h-10 mx-auto mb-2"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+              <p class="text-white/40 text-sm">Choose or drag an image</p>
+              <p class="text-white/20 text-xs mt-1">PNG, JPG, WebP up to 16MB</p>
+            </div>
+            <img id="image-preview-el" class="hidden image-preview" alt="Preview">
+          </div>
+        </div>
+
+        <div id="form-error" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+        <div id="form-success" class="hidden p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-sm" style="color:var(--green)"></div>
+
+        <button onclick="submitIssue()" id="submit-btn" class="btn-green w-full text-sm">
+          Submit Issue
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Issue Detail Modal -->
+<div id="issue-modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-display text-xl font-bold text-white" id="modal-title">Issue Details</h3>
+      <button onclick="closeModal()" class="text-white/40 hover:text-white text-2xl">&times;</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin;
+const API = `${API_BASE}/api`;
+let allIssues = [];
+let allDepartments = [];
+let aiPreviewTimer = null;
+let latestPreviewToken = 0;
+
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user || user.role !== 'citizen') window.location.href = 'index.html';
+
+document.getElementById('user-name-sidebar').textContent = user?.name || 'Citizen';
+
+function showSection(section) {
+  sessionStorage.setItem('citizenActiveSection', section);
+  document.getElementById('section-my-issues').classList.add('hidden');
+  document.getElementById('section-report-issue').classList.add('hidden');
+  document.getElementById(`section-${section}`).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const map = {'my-issues': 0, 'report-issue': 1};
+  document.querySelectorAll('.nav-item')[map[section]]?.classList.add('active');
+  if (section === 'my-issues') loadIssues();
+}
+
+async function loadIssues() {
+  try {
+    const res = await fetch(`${API}/issues/`, {credentials: 'include'});
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) { throw new Error(); }
+    const data = await res.json();
+    allIssues = data.issues || [];
+    renderIssues(allIssues);
+    updateStats();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function loadDepartments() {
+  const deptSelect = document.getElementById('issue-department');
+  try {
+    const res = await fetch(`${API}/departments/`, {credentials: 'include'});
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) { throw new Error(); }
+    const data = await res.json();
+    allDepartments = data.departments || [];
+    deptSelect.innerHTML = `
+      <option value="">Select department...</option>
+      ${allDepartments.map(d => `<option value="${d.id}">${escHtml(d.name)}</option>`).join('')}
+    `;
+  } catch (e) {
+    console.error(e);
+    deptSelect.innerHTML = '<option value="">Unable to load departments</option>';
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = allIssues.length;
+  document.getElementById('stat-pending').textContent = allIssues.filter(i => i.status === 'Pending').length;
+  document.getElementById('stat-inprogress').textContent = allIssues.filter(i => i.status === 'In Progress').length;
+  document.getElementById('stat-resolved').textContent = allIssues.filter(i => i.status === 'Resolved').length;
+}
+
+function filterIssues(status) {
+  const filtered = status === 'all' ? allIssues : allIssues.filter(i => i.status === status);
+  renderIssues(filtered);
+}
+
+function renderIssues(issues) {
+  const list = document.getElementById('issues-list');
+  const noIssues = document.getElementById('no-issues');
+  if (!issues.length) { list.innerHTML = ''; noIssues.classList.remove('hidden'); return; }
+  noIssues.classList.add('hidden');
+
+  list.innerHTML = issues.map(issue => `
+    <div class="card p-5 issue-card cursor-pointer" onclick="openModal('${issue.id}')">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2 flex-wrap">
+            <span class="status-badge status-${issue.status.replace(' ','_')}">${issue.status}</span>
+            <span class="priority-badge priority-${escHtml(issue.priority || 'Medium')}">${escHtml(issue.priority || 'Medium')} Priority</span>
+            ${issue.category ? `<span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/40">${issue.category}</span>` : ''}
+          </div>
+          <h3 class="font-display font-bold text-white text-base truncate">${escHtml(issue.title)}</h3>
+          <p class="text-white/40 text-sm mt-1 line-clamp-2">${escHtml(issue.ai_summary || issue.description)}</p>
+          <div class="flex items-center gap-4 mt-3 text-xs text-white/30">
+            <span>📁 ${escHtml(issue.department_name)}</span>
+            ${issue.latitude ? `<a href="${buildGoogleMapsLink(issue.latitude, issue.longitude)}" target="_blank" rel="noopener noreferrer" style="color:var(--green)">📍 View on Google Maps</a>` : ''}
+            <span>🕒 ${formatDate(issue.created_at)}</span>
+          </div>
+        </div>
+        ${issue.image ? `<img src="${API.replace('/api','')+'/uploads/'+issue.image}" class="w-16 h-16 rounded-lg object-cover flex-shrink-0" alt="Issue photo">` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openModal(issueId) {
+  const res = await fetch(`${API}/issues/${issueId}`, {credentials: 'include'});
+  if (res.status === 401) { sessionExpired(); return; }
+  const data = await res.json();
+  const issue = data.issue;
+  if (!issue) return;
+
+  document.getElementById('modal-title').textContent = issue.title;
+  document.getElementById('modal-content').innerHTML = `
+    <div class="space-y-5">
+      <div class="flex gap-3 flex-wrap">
+        <span class="status-badge status-${issue.status.replace(' ','_')}">${issue.status}</span>
+        <span class="priority-badge priority-${escHtml(issue.priority || 'Medium')}">${escHtml(issue.priority || 'Medium')} Priority</span>
+        ${issue.category ? `<span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/40">${issue.category}</span>` : ''}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/40">${escHtml(issue.department_name)}</span>
+      </div>
+
+      <p class="text-white/60 text-sm leading-relaxed">${escHtml(issue.description)}</p>
+
+      ${issue.ai_summary ? `
+        <div class="card p-4">
+          <p class="text-white/40 text-xs mb-2 font-display font-bold">AI INSIGHT</p>
+          <p class="text-white text-sm">${escHtml(issue.ai_summary)}</p>
+          <div class="flex gap-2 flex-wrap mt-3">
+            <span class="confidence-pill ${confidenceClass(issue.ai_category_confidence || 0)}">Classification confidence: ${confidenceLabel(issue.ai_category_confidence || 0)}</span>
+            <span class="confidence-pill ${confidenceClass(issue.ai_priority_confidence || 0)}">Priority confidence: ${confidenceLabel(issue.ai_priority_confidence || 0)}</span>
+          </div>
+          <div class="flex gap-2 flex-wrap mt-3 text-xs text-white/40">
+            ${issue.ai_category ? `<span>Predicted category: ${escHtml(issue.ai_category)} (${Math.round((issue.ai_category_confidence || 0) * 100)}%)</span>` : ''}
+            ${issue.ai_priority ? `<span>Predicted priority: ${escHtml(issue.ai_priority)}</span>` : ''}
+            ${issue.duplicate_score ? `<span>Duplicate confidence: ${Math.round((issue.duplicate_score || 0) * 100)}%</span>` : ''}
+            ${issue.image_category ? `<span>Image signal: ${escHtml(issue.image_category)} (${Math.round((issue.image_category_confidence || 0) * 100)}%)</span>` : ''}
+          </div>
+          ${issue.image_insight ? `<p class="text-white/40 text-xs mt-3">${escHtml(issue.image_insight)}</p>` : ''}
+        </div>
+      ` : ''}
+
+      ${issue.image ? `<img src="${API.replace('/api','')+'/uploads/'+issue.image}" class="image-preview" alt="Issue photo">` : ''}
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        ${issue.latitude ? `
+          <div class="card p-3 col-span-2">
+            <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <p class="text-white/40 text-xs">Location</p>
+              <a href="${buildGoogleMapsLink(issue.latitude, issue.longitude)}" target="_blank" rel="noopener noreferrer" class="text-xs" style="color:var(--green)">Open in Google Maps</a>
+            </div>
+            <iframe
+              src="${buildGoogleMapsEmbedUrl(issue.latitude, issue.longitude)}"
+              class="w-full rounded-xl"
+              style="height:240px;border:0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Issue location on map">
+            </iframe>
+          </div>
+        ` : ''}
+        <div class="card p-3"><p class="text-white/40 text-xs mb-1">Reported</p><p class="text-white">${formatDate(issue.created_at)}</p></div>
+        <div class="card p-3"><p class="text-white/40 text-xs mb-1">Last Updated</p><p class="text-white">${formatDate(issue.updated_at)}</p></div>
+      </div>
+
+      ${issue.resolution_notes ? `<div class="card p-4"><p class="text-white/40 text-xs mb-2 font-display font-bold">RESOLUTION NOTES</p><p class="text-white/70 text-sm">${escHtml(issue.resolution_notes)}</p></div>` : ''}
+      ${issue.resolution_image ? `<div><p class="text-white/40 text-xs mb-2">Resolution Photo</p><img src="${API.replace('/api','')+'/uploads/'+issue.resolution_image}" class="image-preview" alt="Resolution"></div>` : ''}
+
+      <div>
+        <p class="text-white/40 text-xs mb-3 font-display font-bold">TIMELINE</p>
+        <div class="space-y-0">
+          ${(issue.timeline||[]).slice().reverse().map((t,i) => `
+            <div class="timeline-item">
+              <div class="timeline-dot" style="${i===0?'background:var(--green)':'background:rgba(255,255,255,0.2)'}">
+                <svg viewBox="0 0 24 24" fill="white" class="w-2.5 h-2.5"><circle cx="12" cy="12" r="4"/></svg>
+              </div>
+              <div>
+                <p class="text-white text-sm font-semibold">${t.status}</p>
+                <p class="text-white/40 text-xs">${escHtml(t.note||'')}</p>
+                <p class="text-white/25 text-xs mt-1">${formatDate(t.timestamp)}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('issue-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('issue-modal').classList.add('hidden');
+}
+
+function getLocation() {
+  const btn = document.getElementById('loc-btn');
+  const status = document.getElementById('location-status');
+  btn.textContent = '⏳ Detecting...';
+  btn.disabled = true;
+  status.textContent = '';
+  status.style.color = 'rgba(255,255,255,0.4)';
+
+  if (!navigator.geolocation) {
+    status.textContent = '❌ Geolocation not supported by your browser';
+    status.style.color = '#EF476F';
+    btn.textContent = '📍 Detect';
+    btn.disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById('issue-lat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('issue-lon').value = pos.coords.longitude.toFixed(6);
+      btn.textContent = '✅ Detected';
+      btn.disabled = false;
+      status.textContent = `📍 Location captured (accuracy: ±${Math.round(pos.coords.accuracy)}m)`;
+      status.style.color = 'var(--green)';
+      scheduleAiPreview();
+    },
+    (err) => {
+      const msgs = {1:'Permission denied', 2:'Position unavailable', 3:'Request timed out'};
+      status.textContent = `❌ ${msgs[err.code]||'Error getting location'}`;
+      status.style.color = '#EF476F';
+      btn.textContent = '📍 Detect';
+      btn.disabled = false;
+    },
+    {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
+  );
+}
+
+function previewImage(input) {
+  showSection('report-issue');
+  const preview = document.getElementById('image-preview-el');
+  const placeholder = document.getElementById('image-placeholder');
+  const fileNameEl = document.getElementById('image-file-name');
+  if (input.files && input.files[0]) {
+    fileNameEl.textContent = input.files[0].name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+    scheduleAiPreview();
+  } else {
+    fileNameEl.textContent = 'No file selected';
+    preview.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+}
+
+async function updateAiPreview() {
+  const title = document.getElementById('issue-title').value.trim();
+  const description = document.getElementById('issue-description').value.trim();
+  const lat = document.getElementById('issue-lat').value;
+  const lon = document.getElementById('issue-lon').value;
+  const imageFile = document.getElementById('issue-image').files[0];
+  const statusEl = document.getElementById('ai-preview-status');
+  const pillsEl = document.getElementById('ai-preview-pills');
+  const confidenceEl = document.getElementById('ai-preview-confidence');
+  const summaryEl = document.getElementById('ai-preview-summary');
+
+  if (title.length < 3 && description.length < 12) {
+    statusEl.textContent = 'Waiting for details...';
+    pillsEl.innerHTML = `
+      <span class="ai-pill">Category: —</span>
+      <span class="ai-pill">Department: —</span>
+      <span class="ai-pill">Priority: —</span>
+    `;
+    confidenceEl.innerHTML = '<span class="confidence-pill confidence-medium">AI confidence: Waiting</span>';
+    summaryEl.textContent = 'Describe the issue to get an AI-generated summary and duplicate warning before submission.';
+    return;
+  }
+
+  const token = ++latestPreviewToken;
+  statusEl.textContent = 'Analyzing complaint...';
+
+  try {
+    let res;
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      if (lat) formData.append('latitude', lat);
+      if (lon) formData.append('longitude', lon);
+      formData.append('image', imageFile);
+      res = await fetch(`${API}/issues/ai-preview`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+    } else {
+      res = await fetch(`${API}/issues/ai-preview`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title, description, latitude: lat || null, longitude: lon || null})
+      });
+    }
+    const data = await res.json();
+    if (token !== latestPreviewToken) return;
+    if (!res.ok || !data.preview) {
+      statusEl.textContent = data.error || 'Unable to generate preview';
+      return;
+    }
+
+    const preview = data.preview;
+    statusEl.textContent = 'AI suggestion ready';
+    pillsEl.innerHTML = `
+      <span class="ai-pill">Category: ${escHtml(preview.category || 'Other')} (${Math.round((preview.category_confidence || 0) * 100)}%)</span>
+      <span class="ai-pill">Department: ${escHtml(preview.department_name || 'Unassigned')}</span>
+      <span class="ai-pill">Priority: ${escHtml(preview.priority || 'Medium')}</span>
+    `;
+    const combinedConfidence = Math.max(preview.category_confidence || 0, preview.image_category_confidence || 0);
+    confidenceEl.innerHTML = `
+      <span class="confidence-pill ${confidenceClass(combinedConfidence)}">Classification confidence: ${confidenceLabel(combinedConfidence)}</span>
+      <span class="confidence-pill ${confidenceClass(preview.priority_confidence || 0)}">Priority confidence: ${confidenceLabel(preview.priority_confidence || 0)}</span>
+    `;
+    summaryEl.textContent = preview.duplicate_score >= 0.45
+      ? `${preview.summary} ${preview.duplicate_message || ''} (${Math.round((preview.duplicate_score || 0) * 100)}% match)`
+      : (preview.summary || 'AI preview generated.');
+    if (preview.rule_based_match) {
+      summaryEl.textContent += ` ${preview.rule_based_match}`;
+    }
+    if (preview.image_insight) {
+      summaryEl.textContent += ` ${preview.image_insight}`;
+    }
+
+    const categorySelect = document.getElementById('issue-category');
+    const canAutoFillCategory = (preview.category_confidence || 0) >= 0.75;
+    if (canAutoFillCategory && (!categorySelect.value || categorySelect.value === 'Other')) {
+      const matchingOption = [...categorySelect.options].find(opt => opt.value === preview.category);
+      if (matchingOption) categorySelect.value = preview.category;
+    }
+
+    const deptSelect = document.getElementById('issue-department');
+    if (canAutoFillCategory && !deptSelect.value && preview.department_id) {
+      const matchingDept = [...deptSelect.options].find(opt => opt.value === preview.department_id);
+      if (matchingDept) deptSelect.value = preview.department_id;
+    }
+  } catch (e) {
+    if (token !== latestPreviewToken) return;
+    statusEl.textContent = 'AI preview unavailable';
+  }
+}
+
+function scheduleAiPreview() {
+  clearTimeout(aiPreviewTimer);
+  aiPreviewTimer = setTimeout(updateAiPreview, 450);
+}
+
+// Drag-drop support
+const dropZone = document.getElementById('drop-zone');
+const issueImageInput = document.getElementById('issue-image');
+document.getElementById('choose-image-btn').addEventListener('click', () => issueImageInput.click());
+issueImageInput.addEventListener('change', () => previewImage(issueImageInput));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    issueImageInput.files = dt.files;
+    previewImage(issueImageInput);
+  }
+});
+
+async function submitIssue() {
+  const title = document.getElementById('issue-title').value.trim();
+  const category = document.getElementById('issue-category').value;
+  const department = document.getElementById('issue-department').value;
+  const description = document.getElementById('issue-description').value.trim();
+  const lat = document.getElementById('issue-lat').value;
+  const lon = document.getElementById('issue-lon').value;
+  const imageFile = document.getElementById('issue-image').files[0];
+  const errEl = document.getElementById('form-error');
+  const succEl = document.getElementById('form-success');
+  const btn = document.getElementById('submit-btn');
+
+  errEl.classList.add('hidden');
+  succEl.classList.add('hidden');
+
+  if (!title) { showFormError(errEl, 'Please enter a title'); return; }
+  if (!category) { showFormError(errEl, 'Please select a category'); return; }
+  if (!department) { showFormError(errEl, 'Please select a department'); return; }
+  if (!description) { showFormError(errEl, 'Please describe the issue'); return; }
+
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', category);
+  formData.append('department', department);
+  formData.append('description', description);
+  if (lat) formData.append('latitude', lat);
+  if (lon) formData.append('longitude', lon);
+  if (imageFile) formData.append('image', imageFile);
+
+  try {
+    const res = await fetch(`${API}/issues/`, {method:'POST', credentials:'include', body:formData});
+    const data = await readJsonSafely(res);
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) {
+      if (data.error === 'duplicate') {
+        showFormError(errEl, `⚠️ ${data.message}`);
+      } else {
+        showFormError(errEl, data.error || 'Submission failed');
+      }
+      btn.textContent = 'Submit Issue';
+      btn.disabled = false;
+      return;
+    }
+    // Success
+    succEl.textContent = '✅ Issue submitted successfully! You can report another issue or open My Issues anytime.';
+    succEl.classList.remove('hidden');
+    document.getElementById('issue-title').value = '';
+    document.getElementById('issue-description').value = '';
+    document.getElementById('issue-category').value = '';
+    document.getElementById('issue-department').value = '';
+    document.getElementById('issue-lat').value = '';
+    document.getElementById('issue-lon').value = '';
+    document.getElementById('issue-image').value = '';
+    document.getElementById('image-file-name').textContent = 'No file selected';
+    document.getElementById('image-preview-el').classList.add('hidden');
+    document.getElementById('image-placeholder').classList.remove('hidden');
+    document.getElementById('location-status').textContent = '';
+    latestPreviewToken++;
+    document.getElementById('ai-preview-status').textContent = 'Waiting for details...';
+    document.getElementById('ai-preview-pills').innerHTML = `
+      <span class="ai-pill">Category: —</span>
+      <span class="ai-pill">Department: —</span>
+      <span class="ai-pill">Priority: —</span>
+    `;
+    document.getElementById('ai-preview-confidence').innerHTML = '<span class="confidence-pill confidence-medium">AI confidence: Waiting</span>';
+    document.getElementById('ai-preview-summary').textContent = 'Describe the issue to get an AI-generated summary and duplicate warning before submission.';
+    loadIssues();
+  } catch(e) {
+    showFormError(errEl, 'Connection error. Is the backend running?');
+  }
+  btn.textContent = 'Submit Issue';
+  btn.disabled = false;
+}
+
+async function readJsonSafely(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {error: `Request failed (${response.status})`};
+  }
+}
+
+function showFormError(el, msg) {
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 6000);
+}
+
+function confidenceLabel(value) {
+  if (value >= 0.8) return 'High';
+  if (value >= 0.55) return 'Medium';
+  return 'Low';
+}
+
+function confidenceClass(value) {
+  if (value >= 0.8) return 'confidence-pill confidence-high';
+  if (value >= 0.55) return 'confidence-pill confidence-medium';
+  return 'confidence-pill confidence-low';
+}
+
+async function logout() {
+  await fetch(`${API}/auth/logout`, {method:'POST', credentials:'include'});
+  localStorage.removeItem('user');
+  window.location.href = 'index.html';
+}
+
+function formatDate(str) {
+  if (!str) return 'N/A';
+  try {
+    return new Date(str).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday:'short',
+      year:'numeric',
+      month:'short',
+      day:'numeric',
+      hour:'2-digit',
+      minute:'2-digit',
+      second:'2-digit',
+      hour12: true
+    }) + ' IST';
+  }
+  catch { return str; }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildGoogleMapsLink(lat, lon) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lon}`)}`;
+}
+
+function buildGoogleMapsEmbedUrl(lat, lon) {
+  return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lon}`)}&z=16&output=embed`;
+}
+
+function sessionExpired() {
+  localStorage.removeItem('user');
+  alert('Session expired. Please log in again.');
+  window.location.href = 'index.html';
+}
+
+// Init
+loadDepartments();
+loadIssues();
+showSection(sessionStorage.getItem('citizenActiveSection') || 'my-issues');
+document.getElementById('issue-title').addEventListener('input', scheduleAiPreview);
+document.getElementById('issue-description').addEventListener('input', scheduleAiPreview);
+document.getElementById('issue-category').addEventListener('change', scheduleAiPreview);
+</script>
+</body>
+</html>

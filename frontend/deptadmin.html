@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicPulse — Department Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--green:#00C896;--blue:#0A1628;--accent:#FFD166;--red:#EF476F}
+  *{font-family:'DM Sans',sans-serif}
+  h1,h2,h3,.font-display{font-family:'Syne',sans-serif}
+  body{background:#0A1628;min-height:100vh;color:white}
+  .sidebar{background:rgba(255,255,255,0.03);border-right:1px solid rgba(255,255,255,0.06);width:260px;min-height:100vh;position:fixed;left:0;top:0;z-index:40}
+  .main-content{margin-left:260px;padding:32px;min-height:100vh}
+  .card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px}
+  .input-field{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:white;border-radius:10px;transition:all 0.2s;width:100%;padding:12px 16px}
+  .input-field:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(0,200,150,0.1)}
+  .input-field::placeholder{color:rgba(255,255,255,0.3)}
+  select.input-field option{background:#0A1628}
+  .btn-green{background:var(--green);color:#0A1628;font-family:'Syne',sans-serif;font-weight:700;border-radius:10px;padding:10px 20px;transition:all 0.2s;border:none;cursor:pointer;font-size:13px}
+  .btn-green:hover{background:#00e0aa;box-shadow:0 0 20px rgba(0,200,150,0.3)}
+  .btn-outline{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);border-radius:10px;padding:10px 20px;transition:all 0.2s;cursor:pointer;font-size:13px}
+  .btn-outline:hover{border-color:var(--green);color:var(--green)}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:10px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.2s;font-size:14px}
+  .nav-item:hover,.nav-item.active{background:rgba(0,200,150,0.1);color:var(--green)}
+  .status-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;display:inline-block}
+  .status-Pending{background:rgba(255,193,7,0.15);color:#FFC107;border:1px solid rgba(255,193,7,0.3)}
+  .status-In_Progress{background:rgba(0,123,255,0.15);color:#4DA3FF;border:1px solid rgba(0,123,255,0.3)}
+  .status-Resolved{background:rgba(0,200,150,0.15);color:#00C896;border:1px solid rgba(0,200,150,0.3)}
+  .priority-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;display:inline-block}
+  .priority-High{background:rgba(239,71,111,0.15);color:#EF476F;border:1px solid rgba(239,71,111,0.3)}
+  .priority-Medium{background:rgba(255,209,102,0.15);color:#FFD166;border:1px solid rgba(255,209,102,0.3)}
+  .priority-Low{background:rgba(0,200,150,0.15);color:#00C896;border:1px solid rgba(0,200,150,0.3)}
+  .mini-bar{height:8px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden}
+  .insight-chip{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:999px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.75)}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:#111c2e;border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;padding:32px}
+  .grid-bg{background-image:linear-gradient(rgba(0,200,150,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.03) 1px,transparent 1px);background-size:40px 40px}
+  .issue-row{transition:background 0.2s;border-bottom:1px solid rgba(255,255,255,0.04)}
+  .issue-row:hover{background:rgba(255,255,255,0.03)}
+  .image-preview{width:100%;max-height:250px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1)}
+  .timeline-item{position:relative;padding-left:28px;padding-bottom:20px}
+  .timeline-item::before{content:'';position:absolute;left:8px;top:16px;width:2px;background:rgba(255,255,255,0.1);bottom:0}
+  .timeline-item:last-child::before{display:none}
+  .timeline-dot{position:absolute;left:0;top:4px;width:18px;height:18px;border-radius:50%;background:var(--green)}
+</style>
+</head>
+<body class="grid-bg">
+
+<aside class="sidebar">
+  <div class="p-6">
+    <div class="flex items-center gap-3 mb-8">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:var(--green)">
+        <svg viewBox="0 0 24 24" fill="#0A1628" class="w-5 h-5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+      </div>
+      <span class="font-display text-lg font-bold text-white">CivicPulse</span>
+    </div>
+
+    <div class="mb-6 p-3 rounded-xl" style="background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.15)">
+      <p class="text-xs text-white/40 mb-1">Department Admin</p>
+      <p class="font-semibold text-white text-sm" id="user-name-sidebar">...</p>
+      <p class="text-xs mt-1" style="color:var(--green)" id="dept-name-sidebar">Loading...</p>
+    </div>
+
+    <nav class="space-y-1">
+      <div class="nav-item active" onclick="showSection('issues', this)">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        Assigned Issues
+      </div>
+    </nav>
+  </div>
+
+  <div class="absolute bottom-6 left-6 right-6">
+    <button onclick="logout()" class="btn-outline w-full text-sm flex items-center justify-center gap-2">
+      <svg viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+      Logout
+    </button>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="font-display text-2xl font-bold text-white">Department Dashboard</h1>
+      <p class="text-white/40 text-sm mt-1" id="dept-subtitle">Manage your department's issues</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="card p-4"><p class="text-white/40 text-xs mb-1">Total</p><p class="text-2xl font-display font-bold text-white" id="stat-total">0</p></div>
+    <div class="card p-4"><p class="text-white/40 text-xs mb-1">Pending</p><p class="text-2xl font-display font-bold" style="color:#FFC107" id="stat-pending">0</p></div>
+    <div class="card p-4"><p class="text-white/40 text-xs mb-1">In Progress</p><p class="text-2xl font-display font-bold" style="color:#4DA3FF" id="stat-inprogress">0</p></div>
+    <div class="card p-4"><p class="text-white/40 text-xs mb-1">Resolved</p><p class="text-2xl font-display font-bold" style="color:var(--green)" id="stat-resolved">0</p></div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">High Priority Queue</p>
+      <p class="text-2xl font-display font-bold" style="color:#EF476F" id="ai-high-priority">0</p>
+      <p class="text-white/30 text-xs mt-2">Issues the AI flagged as urgent for this department.</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">Duplicate Risk</p>
+      <p class="text-2xl font-display font-bold" style="color:#FFD166" id="ai-duplicate-rate">0%</p>
+      <p class="text-white/30 text-xs mt-2">Share of issues that may overlap with earlier reports.</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-white/40 text-xs mb-1">Top AI Category</p>
+      <p class="text-xl font-display font-bold text-white" id="ai-top-category">No data</p>
+      <p class="text-white/30 text-xs mt-2">Most common predicted issue type in your queue.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-bold text-white">AI Category Mix</h2>
+        <span class="text-white/30 text-xs">Department scoped</span>
+      </div>
+      <div id="ai-category-list" class="space-y-3"></div>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-display text-lg font-bold text-white">AI Highlights</h2>
+        <span class="text-white/30 text-xs">Live insights</span>
+      </div>
+      <div id="ai-highlights" class="flex flex-wrap gap-3"></div>
+    </div>
+  </div>
+
+  <!-- Issues Section -->
+  <section id="section-issues">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-display text-lg font-bold text-white">Assigned Issues</h2>
+      <div class="flex gap-3">
+        <select id="issue-filter" onchange="filterIssues(this.value)" class="input-field" style="width:auto;padding:8px 12px;font-size:13px">
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+        <button id="issues-refresh-btn" onclick="refreshDashboard()" class="btn-outline text-sm">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+            <th class="text-left p-4 text-white/40 font-normal">Issue</th>
+            <th class="text-left p-4 text-white/40 font-normal hidden md:table-cell">Category</th>
+            <th class="text-left p-4 text-white/40 font-normal">Status</th>
+            <th class="text-left p-4 text-white/40 font-normal hidden md:table-cell">Reported</th>
+            <th class="text-left p-4 text-white/40 font-normal">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="issues-table-body">
+          <tr><td colspan="5" class="p-8 text-center text-white/30">Loading issues...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- Update Issue Modal -->
+<div id="update-modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-display text-xl font-bold text-white">Update Issue</h3>
+      <button onclick="closeUpdateModal()" class="text-white/40 hover:text-white text-2xl">&times;</button>
+    </div>
+    <div id="update-modal-content"></div>
+  </div>
+</div>
+
+<!-- View Detail Modal -->
+<div id="detail-modal" class="modal-bg hidden">
+  <div class="modal">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-display text-xl font-bold text-white" id="detail-title">Issue Details</h3>
+      <button onclick="closeDetailModal()" class="text-white/40 hover:text-white text-2xl">&times;</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin;
+const API = `${API_BASE}/api`;
+let allIssues = [];
+let analyticsCache = null;
+let activeFilter = 'all';
+
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user || user.role !== 'dept_admin') window.location.href = 'index.html';
+document.getElementById('user-name-sidebar').textContent = user?.name || 'Admin';
+
+function sessionExpired() {
+  localStorage.removeItem('user');
+  alert('Session expired. Please log in again.');
+  window.location.href = 'index.html';
+}
+
+async function init() {
+  try {
+    const res = await fetch(`${API}/auth/me`, {credentials: 'include'});
+    if (res.status === 401 || res.status === 403) { sessionExpired(); return; }
+    if (!res.ok) { logout(); return; }
+    const data = await res.json();
+    localStorage.setItem('user', JSON.stringify(data.user));
+    const deptId = data.user.department;
+    if (deptId) {
+      const deptRes = await fetch(`${API}/departments/`, {credentials: 'include'});
+      if (deptRes.ok) {
+        const deptData = await deptRes.json();
+        const dept = deptData.departments.find(d => d.id === deptId);
+        if (dept) {
+          document.getElementById('dept-name-sidebar').textContent = dept.name;
+          document.getElementById('dept-subtitle').textContent = `Managing: ${dept.name}`;
+        }
+      }
+    }
+  } catch(e) {}
+  await Promise.all([loadIssues(), loadAnalytics()]);
+}
+
+async function loadIssues() {
+  try {
+    const res = await fetch(`${API}/admin/all-issues`, {credentials: 'include'});
+    if (res.status === 401 || res.status === 403) { sessionExpired(); return; }
+    if (!res.ok) { console.error('Failed to load issues'); return; }
+    const data = await res.json();
+    allIssues = data.issues || [];
+    applyCurrentFilter();
+    updateStats();
+  } catch(e) { console.error(e); }
+}
+
+async function loadAnalytics() {
+  try {
+    const res = await fetch(`${API}/admin/analytics`, {credentials: 'include'});
+    if (res.status === 401 || res.status === 403) { sessionExpired(); return; }
+    if (!res.ok) { return; }
+    analyticsCache = await res.json();
+    renderAiAnalytics(analyticsCache);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = allIssues.length;
+  document.getElementById('stat-pending').textContent = allIssues.filter(i => i.status === 'Pending').length;
+  document.getElementById('stat-inprogress').textContent = allIssues.filter(i => i.status === 'In Progress').length;
+  document.getElementById('stat-resolved').textContent = allIssues.filter(i => i.status === 'Resolved').length;
+}
+
+function renderAiAnalytics(data) {
+  const aiSummary = data?.ai_summary || {};
+  const categories = data?.by_ai_category || [];
+  const highlights = data?.ai_highlights || [];
+
+  document.getElementById('ai-high-priority').textContent = aiSummary.high_priority ?? 0;
+  document.getElementById('ai-duplicate-rate').textContent = `${aiSummary.duplicate_rate ?? 0}%`;
+  document.getElementById('ai-top-category').textContent = categories[0]?.name || 'No data';
+
+  renderAiCategoryList(categories);
+  renderAiHighlights(highlights);
+}
+
+function renderAiCategoryList(items) {
+  const el = document.getElementById('ai-category-list');
+  if (!items.length) {
+    el.innerHTML = '<p class="text-white/30 text-sm">No AI category data available yet.</p>';
+    return;
+  }
+  const top = Math.max(...items.map(item => item.count), 1);
+  el.innerHTML = items.map(item => `
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-white text-sm">${escHtml(item.name)}</span>
+        <span class="text-white/35 text-xs">${item.count}</span>
+      </div>
+      <div class="mini-bar">
+        <div class="h-full rounded-full" style="width:${Math.max(8, (item.count / top) * 100)}%;background:linear-gradient(90deg,#00C896,#4DA3FF)"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAiHighlights(items) {
+  const el = document.getElementById('ai-highlights');
+  const filteredItems = (items || []).filter(item => {
+    const text = String(item || '').trim();
+    if (!text) return false;
+    return !/^0\s/i.test(text);
+  });
+  if (!filteredItems.length) {
+    el.innerHTML = '<span class="text-white/30 text-sm">No AI highlights available yet.</span>';
+    return;
+  }
+  el.innerHTML = filteredItems.map(item => `<span class="insight-chip">${escHtml(item)}</span>`).join('');
+}
+
+function filterIssues(status) {
+  activeFilter = status;
+  renderIssues(getFilteredIssues());
+}
+
+function getFilteredIssues() {
+  return activeFilter === 'all' ? allIssues : allIssues.filter(i => i.status === activeFilter);
+}
+
+function applyCurrentFilter() {
+  const select = document.getElementById('issue-filter');
+  if (select) {
+    select.value = activeFilter;
+  }
+  const filtered = getFilteredIssues();
+  renderIssues(filtered);
+}
+
+async function refreshDashboard() {
+  const button = document.getElementById('issues-refresh-btn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Refreshing...';
+  }
+  try {
+    await Promise.all([loadIssues(), loadAnalytics()]);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = '↻ Refresh';
+    }
+  }
+}
+
+function renderIssues(issues) {
+  const tbody = document.getElementById('issues-table-body');
+  if (!issues.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-white/30">No issues found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = issues.map(issue => `
+    <tr class="issue-row">
+      <td class="p-4">
+        <p class="text-white font-semibold">${escHtml(issue.title)}</p>
+        <p class="text-white/40 text-xs mt-1">by ${escHtml(issue.user_name)}</p>
+        <p class="text-white/30 text-xs mt-1">${escHtml(issue.ai_summary || issue.description || '')}</p>
+      </td>
+      <td class="p-4 hidden md:table-cell"><span class="text-white/50 text-xs">${escHtml(issue.category||'General')}</span></td>
+      <td class="p-4"><span class="status-badge status-${issue.status.replace(' ','_')}">${issue.status}</span></td>
+      <td class="p-4 hidden md:table-cell"><span class="text-white/40 text-xs">${formatDate(issue.created_at)}</span></td>
+      <td class="p-4">
+        <div class="flex gap-2">
+          <button onclick="openDetailModal('${issue.id}')" class="btn-outline text-xs px-3 py-1.5">View</button>
+          <button onclick="openUpdateModal('${issue.id}')" class="btn-green text-xs px-3 py-1.5">Update</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openDetailModal(issueId) {
+  const issue = allIssues.find(i => i.id === issueId);
+  if (!issue) return;
+  document.getElementById('detail-title').textContent = issue.title;
+  document.getElementById('detail-content').innerHTML = `
+    <div class="space-y-4">
+      <div class="flex gap-2 flex-wrap">
+        <span class="status-badge status-${issue.status.replace(' ','_')}">${issue.status}</span>
+        <span class="priority-badge priority-${escHtml(issue.priority || 'Medium')}">${escHtml(issue.priority || 'Medium')} Priority</span>
+        <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/40">${escHtml(issue.category||'')}</span>
+      </div>
+      <p class="text-white/60 text-sm leading-relaxed">${escHtml(issue.description)}</p>
+      ${issue.ai_summary ? `
+        <div class="card p-4">
+          <p class="text-white/40 text-xs mb-2 font-display font-bold">AI TRIAGE</p>
+          <p class="text-white text-sm">${escHtml(issue.ai_summary)}</p>
+          <div class="flex gap-2 flex-wrap mt-3 text-xs text-white/40">
+            ${issue.ai_category ? `<span>Predicted category: ${escHtml(issue.ai_category)} (${Math.round((issue.ai_category_confidence || 0) * 100)}%)</span>` : ''}
+            ${issue.duplicate_score ? `<span>Duplicate confidence: ${Math.round((issue.duplicate_score || 0) * 100)}%</span>` : ''}
+            ${issue.image_category ? `<span>Image signal: ${escHtml(issue.image_category)} (${Math.round((issue.image_category_confidence || 0) * 100)}%)</span>` : ''}
+          </div>
+          ${issue.image_insight ? `<p class="text-white/40 text-xs mt-3">${escHtml(issue.image_insight)}</p>` : ''}
+        </div>
+      ` : ''}
+      ${issue.image ? `<img src="${API.replace('/api','')+'/uploads/'+issue.image}" class="image-preview" alt="Issue">` : ''}
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="card p-3"><p class="text-white/40 text-xs mb-1">Reported By</p><p class="text-white">${escHtml(issue.user_name)}</p></div>
+        <div class="card p-3"><p class="text-white/40 text-xs mb-1">Date</p><p class="text-white">${formatDate(issue.created_at)}</p></div>
+        ${issue.latitude ? `
+          <div class="card p-3 col-span-2">
+            <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <p class="text-white/40 text-xs">Location</p>
+              <a href="${buildGoogleMapsLink(issue.latitude, issue.longitude)}" target="_blank" rel="noopener noreferrer" class="text-xs" style="color:var(--green)">Open in Google Maps</a>
+            </div>
+            <iframe
+              src="${buildGoogleMapsEmbedUrl(issue.latitude, issue.longitude)}"
+              class="w-full rounded-xl"
+              style="height:240px;border:0"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Issue location on map">
+            </iframe>
+          </div>
+        ` : ''}
+      </div>
+      ${issue.resolution_notes ? `<div class="card p-4"><p class="text-white/40 text-xs mb-2 font-display font-bold">RESOLUTION NOTES</p><p class="text-white/70 text-sm">${escHtml(issue.resolution_notes)}</p></div>` : ''}
+      ${issue.resolution_image ? `<img src="${API.replace('/api','')+'/uploads/'+issue.resolution_image}" class="image-preview" alt="Resolution">` : ''}
+      <div>
+        <p class="text-white/40 text-xs mb-3 font-display font-bold">TIMELINE</p>
+        ${(issue.timeline||[]).slice().reverse().map((t,i) => `
+          <div class="timeline-item">
+            <div class="timeline-dot" style="${i===0?'':'background:rgba(255,255,255,0.2)'}"></div>
+            <p class="text-white text-sm font-semibold">${t.status}</p>
+            <p class="text-white/40 text-xs">${escHtml(t.note||'')}</p>
+            <p class="text-white/25 text-xs mt-1">${formatDate(t.timestamp)}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  document.getElementById('detail-modal').classList.remove('hidden');
+}
+
+function openUpdateModal(issueId) {
+  const issue = allIssues.find(i => i.id === issueId);
+  if (!issue) return;
+  document.getElementById('update-modal-content').innerHTML = `
+    <div class="space-y-5">
+      <div>
+        <p class="text-white/40 text-xs mb-1">Issue</p>
+        <p class="text-white font-semibold">${escHtml(issue.title)}</p>
+      </div>
+      <div>
+        <p class="text-white/40 text-xs mb-1">Current Status</p>
+        <span class="status-badge status-${issue.status.replace(' ','_')}">${issue.status}</span>
+      </div>
+      <div>
+        <label class="text-white/60 text-sm mb-2 block">New Status *</label>
+        <select id="new-status" class="input-field">
+          <option value="Pending" ${issue.status==='Pending'?'selected':''}>Pending</option>
+          <option value="In Progress" ${issue.status==='In Progress'?'selected':''}>In Progress</option>
+          <option value="Resolved" ${issue.status==='Resolved'?'selected':''}>Resolved</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-white/60 text-sm mb-2 block">Resolution Notes</label>
+        <textarea id="resolution-notes" rows="3" placeholder="Add notes about the resolution or progress..." class="input-field resize-none">${escHtml(issue.resolution_notes||'')}</textarea>
+      </div>
+      <div>
+        <label class="text-white/60 text-sm mb-2 block">Correct AI Category</label>
+        <select id="feedback-category" class="input-field">
+          <option value="">Keep current AI/category</option>
+          ${['Pothole','Road Damage','Footpath','Street Light','Power Outage','Water Leakage','Sewage','Drainage','Garbage','Waste Disposal','Park','Tree','Safety Hazard','Other'].map(option => `<option value="${option}" ${(issue.corrected_category || issue.category) === option ? 'selected' : ''}>${option}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="text-white/60 text-sm mb-2 block">Correct AI Priority</label>
+        <select id="feedback-priority" class="input-field">
+          <option value="">Keep current AI/priority</option>
+          ${['High','Medium','Low'].map(option => `<option value="${option}" ${(issue.corrected_priority || issue.priority) === option ? 'selected' : ''}>${option}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="text-white/60 text-sm mb-2 block">Resolution Photo (optional)</label>
+        <input type="file" id="resolution-image" accept="image/*" class="input-field text-sm" style="padding:10px">
+      </div>
+      <div id="update-error" class="hidden p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+      <div class="flex gap-3">
+        <button onclick="submitUpdate('${issue.id}')" class="btn-green flex-1">Save Update</button>
+        <button onclick="closeUpdateModal()" class="btn-outline flex-1">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('update-modal').classList.remove('hidden');
+}
+
+async function submitUpdate(issueId) {
+  const status = document.getElementById('new-status').value;
+  const notes = document.getElementById('resolution-notes').value.trim();
+  const imageFile = document.getElementById('resolution-image').files[0];
+  const correctedCategory = document.getElementById('feedback-category').value;
+  const correctedPriority = document.getElementById('feedback-priority').value;
+  const errEl = document.getElementById('update-error');
+
+  const formData = new FormData();
+  formData.append('status', status);
+  formData.append('resolution_notes', notes);
+  if (imageFile) formData.append('resolution_image', imageFile);
+
+  try {
+    const res = await fetch(`${API}/issues/${issueId}/status`, {
+      method: 'PUT', credentials: 'include', body: formData
+    });
+    const data = await readJson(res);
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Update failed';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (correctedCategory || correctedPriority) {
+      const feedbackRes = await fetch(`${API}/admin/issues/${issueId}/ai-feedback`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          corrected_category: correctedCategory,
+          corrected_priority: correctedPriority,
+          notes: notes
+        })
+      });
+      if (!feedbackRes.ok) {
+        const feedbackData = await readJson(feedbackRes);
+        errEl.textContent = feedbackData.error || 'AI feedback save failed';
+        errEl.classList.remove('hidden');
+        return;
+      }
+    }
+    closeUpdateModal();
+    await Promise.all([loadIssues(), loadAnalytics()]);
+  } catch(e) {
+    errEl.textContent = 'Connection error';
+    errEl.classList.remove('hidden');
+  }
+}
+
+function closeUpdateModal() { document.getElementById('update-modal').classList.add('hidden'); }
+function closeDetailModal() { document.getElementById('detail-modal').classList.add('hidden'); }
+function showSection(s, el) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  el?.classList.add('active');
+}
+
+async function logout() {
+  await fetch(`${API}/auth/logout`, {method:'POST', credentials:'include'});
+  localStorage.removeItem('user');
+  window.location.href = 'index.html';
+}
+
+function formatDate(str) {
+  if (!str) return 'N/A';
+  try {
+    return new Date(str).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday:'short',
+      year:'numeric',
+      month:'short',
+      day:'numeric',
+      hour:'2-digit',
+      minute:'2-digit',
+      second:'2-digit',
+      hour12: true
+    }) + ' IST';
+  }
+  catch { return str; }
+}
+
+function buildGoogleMapsLink(lat, lon) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(`${lat},${lon}`)}`;
+}
+
+function buildGoogleMapsEmbedUrl(lat, lon) {
+  return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lon}`)}&z=16&output=embed`;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function readJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
+document.getElementById('update-modal').addEventListener('click', (event) => {
+  if (event.target.id === 'update-modal') closeUpdateModal();
+});
+
+document.getElementById('detail-modal').addEventListener('click', (event) => {
+  if (event.target.id === 'detail-modal') closeDetailModal();
+});
+
+init();
+</script>
+</body>
+</html>
