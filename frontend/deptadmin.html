@@ -408,8 +408,18 @@ function renderIssues(issues) {
   `).join('');
 }
 
-function openDetailModal(issueId) {
-  const issue = allIssues.find(i => i.id === issueId);
+async function openDetailModal(issueId) {
+  let issue = allIssues.find(i => i.id === issueId);
+  try {
+    const res = await fetch(`${API}/issues/${issueId}`, {credentials: 'include'});
+    if (res.status === 401 || res.status === 403) { sessionExpired(); return; }
+    const data = await readJson(res);
+    if (res.ok && data.issue) {
+      issue = data.issue;
+    }
+  } catch (e) {
+    console.error(e);
+  }
   if (!issue) return;
   document.getElementById('detail-title').textContent = issue.title;
   document.getElementById('detail-content').innerHTML = `
