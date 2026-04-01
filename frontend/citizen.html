@@ -44,6 +44,8 @@
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
   .modal{background:#111c2e;border:1px solid rgba(255,255,255,0.1);border-radius:20px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:32px}
   .grid-bg{background-image:linear-gradient(rgba(0,200,150,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,150,0.03) 1px,transparent 1px);background-size:40px 40px}
+  #duplicate-modal .modal{max-width:820px}
+  .duplicate-actions button{min-height:48px}
   @media(max-width:768px){
     .mobile-topbar{display:flex}
     .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
@@ -58,6 +60,12 @@
     .issue-meta{flex-direction:column;align-items:flex-start;gap:6px}
     .issue-summary-grid{grid-template-columns:1fr}
     .modal{padding:20px}
+    #duplicate-modal .modal{max-width:100%;padding:16px}
+    .duplicate-compare{grid-template-columns:1fr;gap:12px}
+    .duplicate-card{padding:16px}
+    .duplicate-card .flex.items-start.justify-between.gap-3.flex-wrap{flex-direction:column;align-items:flex-start}
+    .duplicate-actions{flex-direction:column}
+    .duplicate-actions button{width:100%}
   }
   .issue-card{transition:transform 0.2s,border-color 0.2s}
   .issue-card:hover{transform:translateY(-2px);border-color:rgba(0,200,150,0.2)}
@@ -791,8 +799,8 @@ async function openDuplicateModal(duplicateData) {
         </p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="card p-4 space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 duplicate-compare">
+        <div class="card p-4 space-y-4 duplicate-card">
           <div class="flex items-start justify-between gap-3 flex-wrap">
             <div class="min-w-0">
               <p class="text-white/35 text-xs font-display font-bold mb-1">YOUR NEW REPORT</p>
@@ -812,7 +820,7 @@ async function openDuplicateModal(duplicateData) {
         </div>
 
         ${existingIssue ? `
-          <div class="card p-4 space-y-4">
+          <div class="card p-4 space-y-4 duplicate-card">
             <div class="flex items-start justify-between gap-3 flex-wrap">
               <div class="min-w-0">
                 <p class="text-white/35 text-xs font-display font-bold mb-1">EXISTING ISSUE</p>
@@ -837,7 +845,7 @@ async function openDuplicateModal(duplicateData) {
         `}
       </div>
 
-      <div class="flex gap-3 flex-wrap">
+      <div class="flex gap-3 flex-wrap duplicate-actions">
         <button type="button" class="btn-outline flex-1 text-sm" onclick="confirmDuplicateMatch()">Yes, same issue</button>
         <button type="button" class="btn-green flex-1 text-sm" onclick="submitDifferentIssue()">No, it is different</button>
       </div>
