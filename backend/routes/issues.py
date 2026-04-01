@@ -270,7 +270,8 @@ def create_issue():
                             f'Similar issue already reported within '
                             f'{DUPLICATE_DISTANCE_THRESHOLD_METERS}m ({int(dist)}m away)'
                         ),
-                        'existing_id': str(existing['_id'])
+                        'existing_id': str(existing['_id']),
+                        'duplicate_distance_meters': round(dist, 1)
                     }), 409
 
     # Handle image upload
@@ -301,6 +302,7 @@ def create_issue():
             'message': ai_result.get('duplicate_message') or 'Potential duplicate complaint already exists.',
             'existing_id': ai_result.get('duplicate_issue_id'),
             'duplicate_score': ai_result.get('duplicate_score'),
+            'duplicate_distance_meters': duplicate_distance,
         }), 409
 
     # Assign department selected by citizen, with category fallback.
