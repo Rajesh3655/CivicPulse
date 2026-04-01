@@ -17,6 +17,7 @@ if not app.secret_key:
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'frontend'))
+SEEDED_UPLOADS_DIR = os.path.join(BASE_DIR, 'seed_uploads')
 FRONTEND_PAGES = {
     'index.html',
     'citizen.html',
@@ -56,6 +57,7 @@ if os.environ.get('CORS_ORIGINS'):
 CORS(app, supports_credentials=True, origins=allowed_origins)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(SEEDED_UPLOADS_DIR, exist_ok=True)
 
 # MongoDB connection
 MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
@@ -106,7 +108,15 @@ app.register_blueprint(departments_bp, url_prefix='/api/departments')
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if os.path.exists(upload_path):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+    seeded_path = os.path.join(SEEDED_UPLOADS_DIR, filename)
+    if os.path.exists(seeded_path):
+        return send_from_directory(SEEDED_UPLOADS_DIR, filename)
+
+    abort(404)
 
 @app.route('/')
 def serve_index():
