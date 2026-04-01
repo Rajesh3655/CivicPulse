@@ -9,6 +9,7 @@ from ml_service import analyze_issue
 issues_bp = Blueprint('issues', __name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+DUPLICATE_DISTANCE_THRESHOLD_METERS = 200
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -21,6 +22,10 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     dlambda = math.radians(lon2 - lon1)
     a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
     return 2 * R * math.asin(math.sqrt(a))
+
+
+def is_duplicate_distance(distance_meters):
+    return distance_meters is not None and distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS
 
 def serialize_utc_timestamp(value):
     if isinstance(value, datetime):
@@ -239,12 +244,15 @@ def create_issue():
         for existing in existing_issues:
             existing_lat = existing.get('latitude')
             existing_lon = existing.get('longitude')
-            if existing_lat and existing_lon:
+            if existing_lat is not None and existing_lon is not None:
                 dist = haversine_distance(lat, lon, existing_lat, existing_lon)
-                if dist < 100:
+                if is_duplicate_distance(dist):
                     return jsonify({
                         'error': 'duplicate',
-                        'message': f'Similar issue already reported nearby ({int(dist)}m away)',
+                        'message': (
+                            f'Similar issue already reported within '
+                            f'{DUPLICATE_DISTANCE_THRESHOLD_METERS}m ({int(dist)}m away)'
+                        ),
                         'existing_id': str(existing['_id'])
                     }), 409
 
@@ -264,7 +272,11 @@ def create_issue():
     image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image_filename) if image_filename else None
     ai_result = analyze_issue(db, title, description, lat, lon, image_path=image_path)
 
-    if ai_result.get('duplicate_score', 0) >= 0.82 and ai_result.get('duplicate_issue_id'):
+    duplicate_distance = ai_result.get('duplicate_distance_meters')
+    if (
+        ai_result.get('duplicate_issue_id')
+        and is_duplicate_distance(duplicate_distance)
+    ):
         return jsonify({
             'error': 'duplicate',
             'message': ai_result.get('duplicate_message') or 'Potential duplicate complaint already exists.',

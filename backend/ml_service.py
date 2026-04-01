@@ -200,6 +200,7 @@ RULE_BASED_CATEGORY_PATTERNS = {
 BASE_DIR = os.path.dirname(__file__)
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 TRAINING_REPORT_PATH = os.path.join(MODEL_DIR, "training_report.json")
+DUPLICATE_DISTANCE_THRESHOLD_METERS = 200
 
 
 def normalize_text(value: str | None) -> str:
@@ -422,6 +423,10 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return 2 * radius * math.asin(math.sqrt(a))
 
 
+def is_duplicate_distance(distance_meters: float | None) -> bool:
+    return distance_meters is not None and distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS
+
+
 def calculate_duplicate_signal(db, title: str, description: str, lat: float | None, lon: float | None) -> dict:
     current_text = normalize_text(f"{title} {description}")
     if not current_text:
@@ -475,20 +480,26 @@ def calculate_duplicate_signal(db, title: str, description: str, lat: float | No
         existing_lon = issue.get("longitude")
         if lat is not None and lon is not None and existing_lat is not None and existing_lon is not None:
             distance_meters = haversine_distance(lat, lon, existing_lat, existing_lon)
-            if distance_meters <= 100:
+            if distance_meters <= DUPLICATE_DISTANCE_THRESHOLD_METERS:
                 distance_score = 1.0
-            elif distance_meters <= 300:
+            elif distance_meters <= 500:
                 distance_score = 0.6
             elif distance_meters <= 1000:
                 distance_score = 0.25
         score = round((similarity * 0.7) + (distance_score * 0.3), 3)
         if score > best["score"]:
+            if is_duplicate_distance(distance_meters):
+                message = f"Potential duplicate complaint found within {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters."
+            elif distance_meters is not None:
+                message = f"Similar complaint found, but it is more than {DUPLICATE_DISTANCE_THRESHOLD_METERS} meters away."
+            else:
+                message = "Similar complaint found, but location could not confirm a nearby duplicate."
             best = {
                 "score": score,
                 "duplicate_issue_id": str(issue["_id"]),
                 "similarity": round(similarity, 3),
                 "distance_meters": round(distance_meters, 1) if distance_meters is not None else None,
-                "message": "Potential duplicate complaint found." if score >= 0.45 else "No likely duplicate found.",
+                "message": message if score >= 0.45 else "No likely duplicate found.",
             }
 
     return best
