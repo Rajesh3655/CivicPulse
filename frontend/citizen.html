@@ -47,6 +47,7 @@
   #duplicate-modal .modal{max-width:820px}
   .duplicate-actions button{min-height:48px}
   .duplicate-map{height:180px;border:0}
+  .duplicate-distance-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:rgba(255,209,102,0.12);border:1px solid rgba(255,209,102,0.28);color:#FFD166;font-size:12px;font-weight:700;font-family:'Syne',sans-serif}
   @media(max-width:768px){
     .mobile-topbar{display:flex}
     .sidebar{transform:translateX(-100%);box-shadow:0 18px 60px rgba(0,0,0,0.4)}
@@ -68,6 +69,7 @@
     .duplicate-actions{flex-direction:column}
     .duplicate-actions button{width:100%}
     .duplicate-map{height:160px}
+    .duplicate-distance-badge{width:100%;justify-content:center}
   }
   .issue-card{transition:transform 0.2s,border-color 0.2s}
   .issue-card:hover{transform:translateY(-2px);border-color:rgba(0,200,150,0.2)}
@@ -794,6 +796,7 @@ async function openDuplicateModal(duplicateData) {
   document.getElementById('duplicate-modal-content').innerHTML = `
     <div class="space-y-5">
       <div class="p-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10">
+        ${duplicateDistance ? `<div class="duplicate-distance-badge mb-3">📏 ${Math.round(duplicateDistance)} meters apart</div>` : ''}
         <p class="text-yellow-200 text-sm">${escHtml(duplicateData.message || 'A similar issue may already exist nearby.')}</p>
         <p class="text-white/40 text-xs mt-2">
           ${duplicateDistance ? `Nearest matching issue is about ${Math.round(duplicateDistance)} meters away. ` : ''}
