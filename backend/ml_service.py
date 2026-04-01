@@ -9,6 +9,9 @@ import re
 from typing import Iterable
 from PIL import Image, ImageStat
 import joblib
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -200,9 +203,9 @@ RULE_BASED_CATEGORY_PATTERNS = {
 BASE_DIR = os.path.dirname(__file__)
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 TRAINING_REPORT_PATH = os.path.join(MODEL_DIR, "training_report.json")
-DUPLICATE_DISTANCE_THRESHOLD_METERS = 200
-DUPLICATE_REVIEW_SCORE_THRESHOLD = 0.45
-DUPLICATE_BLOCK_SCORE_THRESHOLD = 0.62
+DUPLICATE_DISTANCE_THRESHOLD_METERS = float(os.environ.get("DUPLICATE_DISTANCE_THRESHOLD_METERS", "200"))
+DUPLICATE_REVIEW_SCORE_THRESHOLD = float(os.environ.get("DUPLICATE_REVIEW_SCORE_THRESHOLD", "0.45"))
+DUPLICATE_BLOCK_SCORE_THRESHOLD = float(os.environ.get("DUPLICATE_BLOCK_SCORE_THRESHOLD", "0.62"))
 
 
 def normalize_text(value: str | None) -> str:
