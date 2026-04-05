@@ -1,0 +1,90 @@
+{
+  "trained_at": "2026-04-01T15:23:32.521193Z",
+  "dataset_size": 11,
+  "category_labels": {
+    "Pothole": 2,
+    "Street Light": 1,
+    "Garbage": 1,
+    "Water Leakage": 1,
+    "Drainage": 1,
+    "Footpath": 1,
+    "Safety Hazard": 1,
+    "Tree": 1,
+    "Sewage": 1,
+    "Road Damage": 1
+  },
+  "priority_labels": {
+    "High": 5,
+    "Medium": 6
+  },
+  "category_model": {
+    "train_size": 8,
+    "test_size": 3,
+    "accuracy": 0.3333,
+    "classification_report": {
+      "Footpath": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Pothole": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "f1-score": 0.5,
+        "support": 1.0
+      },
+      "Road Damage": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "accuracy": 0.3333333333333333,
+      "macro avg": {
+        "precision": 0.1111111111111111,
+        "recall": 0.3333333333333333,
+        "f1-score": 0.16666666666666666,
+        "support": 3.0
+      },
+      "weighted avg": {
+        "precision": 0.1111111111111111,
+        "recall": 0.3333333333333333,
+        "f1-score": 0.16666666666666666,
+        "support": 3.0
+      }
+    }
+  },
+  "priority_model": {
+    "train_size": 8,
+    "test_size": 3,
+    "accuracy": 0.0,
+    "classification_report": {
+      "High": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Medium": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 2.0
+      },
+      "accuracy": 0.0,
+      "macro avg": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 3.0
+      },
+      "weighted avg": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 3.0
+      }
+    }
+  }
+}

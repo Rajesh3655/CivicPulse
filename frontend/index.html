@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CivicPulse — Smart Issue Reporting</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --civic-green: #00C896;
+    --civic-blue: #0A1628;
+    --civic-accent: #FFD166;
+    --civic-red: #EF476F;
+  }
+  * { font-family: 'DM Sans', sans-serif; }
+  h1,h2,h3,.font-display { font-family: 'Syne', sans-serif; }
+
+  body {
+    background: #0A1628;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .grid-bg {
+    background-image: 
+      linear-gradient(rgba(0,200,150,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,150,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .glow-green { box-shadow: 0 0 40px rgba(0,200,150,0.2); }
+  .glow-green-sm { box-shadow: 0 0 15px rgba(0,200,150,0.3); }
+  .text-green { color: var(--civic-green); }
+  .bg-green { background: var(--civic-green); }
+  .border-green { border-color: var(--civic-green); }
+
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+  }
+
+  .btn-primary {
+    background: var(--civic-green);
+    color: #0A1628;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover {
+    background: #00e0aa;
+    box-shadow: 0 0 25px rgba(0,200,150,0.4);
+    transform: translateY(-1px);
+  }
+
+  .input-field {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    border-radius: 10px;
+    transition: border-color 0.2s;
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--civic-green);
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.1);
+  }
+  .input-field::placeholder { color: rgba(255,255,255,0.3); }
+
+  .tab-btn {
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--civic-green);
+    color: #0A1628;
+  }
+
+  .pulse-dot {
+    width: 8px; height: 8px;
+    background: var(--civic-green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(1.5); }
+  }
+
+  .float-badge {
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .stat-card {
+    background: rgba(0,200,150,0.08);
+    border: 1px solid rgba(0,200,150,0.2);
+    border-radius: 12px;
+  }
+
+  .orb {
+    border-radius: 50%;
+    filter: blur(80px);
+    position: absolute;
+    pointer-events: none;
+  }
+  @media (max-width:768px) {
+    .orb { filter: blur(60px); }
+    .card { padding: 24px; }
+    h1 { font-size: 2.25rem; line-height: 1.05; }
+  }
+</style>
+</head>
+<body class="grid-bg">
+
+<!-- Ambient orbs -->
+<div class="orb w-96 h-96 top-0 right-0 opacity-20" style="background: #00C896;"></div>
+<div class="orb w-64 h-64 bottom-20 left-0 opacity-10" style="background: #FFD166;"></div>
+
+<div class="min-h-screen flex">
+  <!-- Left Panel -->
+  <div class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative">
+    <div>
+      <div class="flex items-center gap-3 mb-16">
+        <div class="w-10 h-10 rounded-xl bg-green flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="#0A1628" class="w-6 h-6"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        </div>
+        <span class="text-white font-display text-xl font-bold">CivicPulse</span>
+      </div>
+
+      <h1 class="text-5xl font-display font-800 text-white leading-tight mb-6">
+        Report. Track.<br>
+        <span class="text-green">Resolve.</span>
+      </h1>
+      <p class="text-white/50 text-lg leading-relaxed max-w-md">
+        A smart platform connecting citizens with city departments. Report civic issues, track resolutions in real-time, and help build a better city together.
+      </p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="stat-card p-4">
+        <div class="text-2xl font-display font-bold text-green">2.4k+</div>
+        <div class="text-white/40 text-sm mt-1">Issues Resolved</div>
+      </div>
+      <div class="stat-card p-4">
+        <div class="text-2xl font-display font-bold text-green">98%</div>
+        <div class="text-white/40 text-sm mt-1">Response Rate</div>
+      </div>
+      <div class="stat-card p-4">
+        <div class="text-2xl font-display font-bold text-green">6</div>
+        <div class="text-white/40 text-sm mt-1">Departments</div>
+      </div>
+    </div>
+
+    <!-- Feature badges -->
+    <div class="flex gap-3 flex-wrap">
+      <div class="float-badge flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+        <div class="pulse-dot"></div>
+        <span class="text-white/60 text-sm">Live Tracking</span>
+      </div>
+      <div class="float-badge flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2" style="animation-delay:0.5s">
+        <svg viewBox="0 0 24 24" fill="#00C896" class="w-4 h-4"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+        <span class="text-white/60 text-sm">GPS Location</span>
+      </div>
+      <div class="float-badge flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2" style="animation-delay:1s">
+        <svg viewBox="0 0 24 24" fill="#FFD166" class="w-4 h-4"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <span class="text-white/60 text-sm">Smart Reports</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel - Auth -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+    <div class="w-full max-w-md">
+      <!-- Mobile logo -->
+      <div class="flex items-center gap-3 mb-8 lg:hidden">
+        <div class="w-10 h-10 rounded-xl bg-green flex items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="#0A1628" class="w-6 h-6"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+        </div>
+        <span class="text-white font-display text-xl font-bold">CivicPulse</span>
+      </div>
+
+      <div class="card p-8 glow-green">
+        <!-- Tabs -->
+        <div class="flex gap-2 p-1 bg-white/5 rounded-10 mb-8" style="border-radius:10px">
+          <button onclick="showTab('login')" id="tab-login" class="tab-btn flex-1 py-2.5 px-4 text-sm active">Sign In</button>
+          <button onclick="showTab('register')" id="tab-register" class="tab-btn flex-1 py-2.5 px-4 text-sm">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form">
+          <h2 class="text-2xl font-display font-bold text-white mb-2">Welcome back</h2>
+          <p class="text-white/40 text-sm mb-6">Sign in to your civic account</p>
+
+          <div class="space-y-4">
+            <div>
+              <label class="text-white/60 text-sm mb-1.5 block">Email</label>
+              <input type="email" id="login-email" placeholder="you@example.com" class="input-field w-full px-4 py-3">
+            </div>
+            <div>
+              <label class="text-white/60 text-sm mb-1.5 block">Password</label>
+              <input type="password" id="login-password" placeholder="••••••••" class="input-field w-full px-4 py-3">
+            </div>
+          </div>
+
+          <div id="login-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+
+          <button onclick="handleLogin()" class="btn-primary w-full py-3.5 rounded-xl mt-6 text-sm">
+            Sign In →
+          </button>
+
+          <div class="mt-6 p-4 bg-white/3 rounded-xl border border-white/5">
+            <p class="text-white/40 text-xs font-display font-bold mb-2">ACCOUNT ACCESS</p>
+            <div class="space-y-1">
+              <p class="text-white/50 text-xs">Citizen: Register a new account to get started</p>
+              <p class="text-white/50 text-xs">Department admin accounts can be created from the super admin panel</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="hidden">
+          <h2 class="text-2xl font-display font-bold text-white mb-2">Join CivicPulse</h2>
+          <p class="text-white/40 text-sm mb-6">Create your citizen account</p>
+
+          <div class="space-y-4">
+            <div>
+              <label class="text-white/60 text-sm mb-1.5 block">Full Name</label>
+              <input type="text" id="reg-name" placeholder="John Doe" class="input-field w-full px-4 py-3">
+            </div>
+            <div>
+              <label class="text-white/60 text-sm mb-1.5 block">Email</label>
+              <input type="email" id="reg-email" placeholder="you@example.com" class="input-field w-full px-4 py-3">
+            </div>
+            <div>
+              <label class="text-white/60 text-sm mb-1.5 block">Password</label>
+              <input type="password" id="reg-password" placeholder="Min. 6 characters" class="input-field w-full px-4 py-3">
+            </div>
+          </div>
+
+          <div id="reg-error" class="hidden mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm"></div>
+
+          <button onclick="handleRegister()" class="btn-primary w-full py-3.5 rounded-xl mt-6 text-sm">
+            Create Account →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:5000' : window.location.origin;
+const API = `${API_BASE}/api`;
+
+function showTab(tab) {
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+
+  if (!email || !password) {
+    showError(errEl, 'Please fill in all fields');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({email, password})
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(errEl, data.error); return; }
+
+    localStorage.setItem('user', JSON.stringify(data.user));
+    redirectByRole(data.user.role);
+  } catch(e) {
+    showError(errEl, 'Connection error. Is the backend running?');
+  }
+}
+
+async function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-error');
+
+  if (!name || !email || !password) { showError(errEl, 'Please fill in all fields'); return; }
+  if (password.length < 6) { showError(errEl, 'Password must be at least 6 characters'); return; }
+
+  try {
+    const res = await fetch(`${API}/auth/register`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({name, email, password, role: 'citizen'})
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(errEl, data.error); return; }
+
+    localStorage.setItem('user', JSON.stringify(data.user));
+    redirectByRole(data.user.role);
+  } catch(e) {
+    showError(errEl, 'Connection error. Is the backend running?');
+  }
+}
+
+function redirectByRole(role) {
+  if (role === 'super_admin') window.location.href = 'superadmin.html';
+  else if (role === 'dept_admin') window.location.href = 'deptadmin.html';
+  else window.location.href = 'citizen.html';
+}
+
+function clearStoredSession() {
+  localStorage.removeItem('user');
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+// Check if already logged in
+(async () => {
+  try {
+    const res = await fetch(`${API}/auth/me`, {credentials: 'include'});
+    if (res.status === 401) {
+      clearStoredSession();
+      return;
+    }
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('user', JSON.stringify(data.user));
+      redirectByRole(data.user.role);
+    } else {
+      clearStoredSession();
+    }
+  } catch(e) {
+    clearStoredSession();
+  }
+})();
+
+// Enter key support
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const loginVisible = !document.getElementById('login-form').classList.contains('hidden');
+    if (loginVisible) handleLogin(); else handleRegister();
+  }
+});
+</script>
+</body>
+</html>
